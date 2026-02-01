@@ -1,3 +1,12 @@
+from inventory import (
+    add_tablet,
+    view_tablets,
+    search_tablet,
+    view_blocked_tablets,
+    load_tablets,
+    save_tablets
+)
+
 from datetime import datetime
 import qrcode
 import os
@@ -168,90 +177,7 @@ def verify_bill():
 
 
 # ---------- Main Menu ----------
-def search_tablet():
-    tablets = load_tablets()
-    if not tablets:
-        print("No tablets available.")
-        return
 
-    search_name = input("\nEnter tablet name to search: ").lower()
-    today = datetime.today().date()
-    found = False
-
-    print("\n--- Search Results ---")
-    for t in tablets:
-        if search_name in t["name"].lower():
-            expiry_date = datetime.strptime(t["expiry"], "%Y-%m-%d").date()
-            days_left = (expiry_date - today).days
-
-            if days_left < 0:
-                status = "EXPIRED ❌"
-            elif days_left <= 30:
-                status = f"NEAR EXPIRY ⚠️ ({days_left} days left)"
-            else:
-                status = f"SAFE ✅ ({days_left} days left)"
-
-            print(
-                f"{t['name']} | Qty: {t['qty']} | Expiry: {expiry_date} | {status}"
-            )
-            found = True
-
-    if not found:
-        print("❌ No matching tablet found.")
-def view_blocked_tablets():
-    tablets = load_tablets()
-    if not tablets:
-        print("No tablets available.")
-        return
-
-    today = datetime.today().date()
-    found = False
-
-    print("\n--- BLOCKED (EXPIRED) TABLETS ---")
-    for t in tablets:
-        expiry_date = datetime.strptime(t["expiry"], "%Y-%m-%d").date()
-        days_left = (expiry_date - today).days
-
-        if days_left < 0:
-            print(
-                f"{t['name']} | Qty: {t['qty']} | Expired on: {expiry_date} ❌"
-            )
-            found = True
-
-    if not found:
-        print("✅ No blocked tablets found.")
-def add_tablet():
-    tablets = load_tablets()
-
-    print("\n--- Add New Tablet ---")
-    name = input("Enter tablet name: ")
-
-    # Check duplicate
-    for t in tablets:
-        if t["name"].lower() == name.lower():
-            print("❌ Tablet already exists in inventory.")
-            return
-
-    qty = int(input("Enter quantity: "))
-    expiry_input = input("Enter expiry date (DD-MM-YYYY): ")
-
-    expiry_date = datetime.strptime(expiry_input, "%d-%m-%Y").date()
-    today = datetime.today().date()
-
-    status = "VALID"
-    if expiry_date < today:
-        status = "EXPIRED"
-
-    tablets.append({
-        "name": name,
-        "qty": qty,
-        "expiry": expiry_date.strftime("%Y-%m-%d"),
-        "status": status
-    })
-
-    save_tablets(tablets)
-
-    print("✅ Tablet added successfully.")
 
 def generate_invoice(bill_id, date, name, qty, price, total):
     try:
