@@ -12,9 +12,7 @@ from billing import generate_invoice, verify_bill, sales_analytics
 from datetime import datetime
 
 
-from datetime import datetime
-import qrcode
-import os
+
 
 TABLET_FILE = "tablets.txt"
 BILL_FILE = "bills.txt"
@@ -241,6 +239,8 @@ while True:
     elif choice == "6":
         view_blocked_tablets()
     elif choice == "7":
+        sales_analytics()
+    elif choice == "8":
         print("Goodbye 👋")
         break
     else:
