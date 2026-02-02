@@ -7,6 +7,11 @@ from inventory import (
     save_tablets
 )
 
+from qr_utils import generate_qr
+from billing import generate_invoice, verify_bill, sales_analytics
+from datetime import datetime
+
+
 from datetime import datetime
 import qrcode
 import os
