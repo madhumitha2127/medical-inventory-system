@@ -88,3 +88,41 @@ def sales_analytics():
 
     except FileNotFoundError:
         print("❌ No billing data found.")
+from datetime import datetime
+from inventory import load_tablets, save_tablets
+
+def sell_tablet_logic(name, sell_qty, price):
+    tablets = load_tablets()
+    today = datetime.today().date()
+
+    for t in tablets:
+        if t["name"].lower() == name.lower():
+            expiry_date = datetime.strptime(t["expiry"], "%Y-%m-%d").date()
+            days_left = (expiry_date - today).days
+
+            if days_left < 0:
+                return {"error": "Tablet is expired"}
+
+            if t["qty"] < sell_qty:
+                return {"error": "Not enough stock"}
+
+            t["qty"] -= sell_qty
+            total = sell_qty * price
+            bill_id = int(datetime.now().timestamp())
+
+            with open("bills.txt", "a") as bill:
+                bill.write(
+                    f"{bill_id},{today},{name},{sell_qty},{price},{total}\n"
+                )
+
+            save_tablets(tablets)
+
+            return {
+                "message": "Sale successful",
+                "bill_id": bill_id,
+                "tablet": name,
+                "quantity": sell_qty,
+                "total": total
+            }
+
+    return {"error": "Tablet not found"}
