@@ -33,6 +33,11 @@ def sell_tablet_api():
         data["price"]
     )
     return jsonify(result)
+from inventory import get_blocked_tablets
+
+@app.route("/blocked-tablets", methods=["GET"])
+def blocked_tablets_api():
+    return jsonify(get_blocked_tablets())
 
 # 4️⃣ Run server
 if __name__ == "__main__":

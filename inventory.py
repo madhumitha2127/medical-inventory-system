@@ -136,3 +136,16 @@ def add_tablet():
 
     save_tablets(tablets)
     print("✅ Tablet added successfully.")
+from datetime import datetime
+
+def get_blocked_tablets():
+    tablets = load_tablets()
+    today = datetime.today().date()
+    blocked = []
+
+    for t in tablets:
+        expiry_date = datetime.strptime(t["expiry"], "%Y-%m-%d").date()
+        if expiry_date < today:
+            blocked.append(t)
+
+    return blocked
