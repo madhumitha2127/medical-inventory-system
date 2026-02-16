@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>Medical Inventory</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="layout">
+
+```
+<!-- ✅ SIDEBAR -->
+<div class="sidebar">
+    <h2>💊 MedInventory</h2>
+
+    <button onclick="showSection('dashboard')">Dashboard</button>
+    <button onclick="showSection('stock')">Stock</button>
+    <button onclick="showSection('analytics')">Analytics</button>
+    <button onclick="showSection('bills')">Bills</button>
+</div>
+
+
+<!-- ✅ MAIN CONTENT -->
+<div class="main">
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="section">
+
+        <h1>Medical Inventory Dashboard</h1>
+
+        <div class="grid">
+
+            <!-- Add -->
+            <div class="card">
+                <h2>Add Tablet</h2>
+
+                <input id="name" placeholder="Tablet Name">
+                <input id="qty" type="number" placeholder="Quantity">
+                <input id="expiry" type="date">
+
+                <button onclick="addTablet()">Add Tablet</button>
+            </div>
+
+            <!-- Sell -->
+            <div class="card">
+                <h2>Sell Tablet</h2>
+
+                <input id="sellName" placeholder="Tablet Name">
+                <input id="sellQty" type="number" placeholder="Quantity">
+                <input id="sellPrice" type="number" placeholder="Price">
+
+                <button onclick="sellTablet()">Sell</button>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- STOCK -->
+    <div id="stock" class="section" style="display:none;">
+        <h1>Available Tablets</h1>
+        <div id="tabletList"></div>
+    </div>
+
+
+    <!-- ANALYTICS -->
+    <div id="analytics" class="section" style="display:none;">
+        <h1>Sales Analytics</h1>
+        <button onclick="loadSales()">Load Analytics</button>
+        <div id="salesData"></div>
+    </div>
+
+
+    <!-- BILLS -->
+    <div id="bills" class="section" style="display:none;">
+        <h1>Billing History</h1>
+        <button onclick="loadBills()">Load Bills</button>
+        <div id="billList"></div>
+    </div>
+
+</div>
+```
+
+</div>
+
+<script src="/static/script.js"></script>
+
+</body>
+</html>

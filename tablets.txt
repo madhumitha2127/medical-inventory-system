@@ -1,3 +1,8 @@
 paracetomal,0,2026-06-27,VALID
 paracettomal,10,2006-07-27,EXPIRED
-dolo,16,2026-12-25,VALID
+dolo,11,2026-12-25,VALID
+dophomine,50,2028-03-31,VALID
+pantocolin,20,2029-08-24,VALID
+dolono,80,28/09/2030,VALID
+anticipide,69,23/9/2930,VALID
+cold,0,2030-08-23,VALID

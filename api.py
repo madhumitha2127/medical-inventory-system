@@ -1,29 +1,35 @@
-from flask import Flask, jsonify, request
-from inventory import load_tablets
+from flask import Flask, jsonify, request, render_template
+from flask_cors import CORS
+from inventory import load_tablets, add_tablet
+from billing import sell_tablet_logic
+from billing import get_all_bills
 
-# 1️⃣ Create Flask app FIRST
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 
-# 2️⃣ Home route
+CORS(app)
+from billing import sales_analytics_data
+
+@app.route("/sales", methods=["GET"])
+def get_sales():
+    return jsonify(sales_analytics_data())
+
 @app.route("/")
 def home():
-    return jsonify({"message": "Medical Inventory API is running"})
+    return render_template("index.html")
 
-# 3️⃣ View all tablets API
-from inventory import add_tablet
+@app.route("/tablets", methods=["GET"])
+def get_tablets():
+    return jsonify(load_tablets())
 
 @app.route("/add-tablet", methods=["POST"])
 def add_tablet_api():
     data = request.json
-    name = data["name"]
-    qty = data["qty"]
-    expiry = data["expiry"]
-
-    add_tablet(name, qty, expiry)
-    return jsonify({"message": "Tablet added successfully"})
-
-from billing import sell_tablet_logic
-
+    result = add_tablet(
+        data["name"],
+        data["qty"],
+        data["expiry"]
+    )
+    return jsonify(result)
 @app.route("/sell-tablet", methods=["POST"])
 def sell_tablet_api():
     data = request.json
@@ -33,12 +39,40 @@ def sell_tablet_api():
         data["price"]
     )
     return jsonify(result)
-from inventory import get_blocked_tablets
+from billing import get_all_bills
 
-@app.route("/blocked-tablets", methods=["GET"])
-def blocked_tablets_api():
-    return jsonify(get_blocked_tablets())
+@app.route("/bills", methods=["GET"])
+def get_bills():
+    return jsonify(get_all_bills())
 
-# 4️⃣ Run server
+@app.route("/bills", methods=["GET"])
+def bills_api():
+    return jsonify(get_all_bills())
+from billing import get_all_bills
+
+@app.route("/bills", methods=["GET"])
+def fetch_bills():
+    return jsonify(get_all_bills())
+@app.route("/alerts", methods=["GET"])
+def get_alerts():
+
+    tablets = load_tablets()
+
+    expired = []
+    out_of_stock = []
+
+    for t in tablets:
+
+        if t["status"] == "EXPIRED":
+            expired.append(t["name"])
+
+        if int(t["qty"]) == 0:
+            out_of_stock.append(t["name"])
+
+    return jsonify({
+        "expired": expired,
+        "out_of_stock": out_of_stock
+    })
+
 if __name__ == "__main__":
     app.run(debug=True)

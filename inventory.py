@@ -25,127 +25,42 @@ def save_tablets(tablets):
             file.write(f"{t['name']},{t['qty']},{t['expiry']},{t['status']}\n")
 
 
-def view_tablets():
+def add_tablet(name, qty, expiry):
     tablets = load_tablets()
-    if not tablets:
-        print("No tablets available.")
-        return
-
-    today = datetime.today().date()
-
-    print("\n--- Available Tablets ---")
-    for t in tablets:
-        expiry_date = datetime.strptime(t["expiry"], "%Y-%m-%d").date()
-        days_left = (expiry_date - today).days
-
-        if days_left < 0:
-            status = "EXPIRED ❌"
-        elif days_left <= 30:
-            status = f"NEAR EXPIRY ⚠️ ({days_left} days left)"
-        else:
-            status = f"SAFE ✅ ({days_left} days left)"
-
-        print(
-            f"{t['name']} | Qty: {t['qty']} | Expiry: {expiry_date} | {status}"
-        )
-
-
-def search_tablet():
-    tablets = load_tablets()
-    if not tablets:
-        print("No tablets available.")
-        return
-
-    search_name = input("\nEnter tablet name to search: ").lower()
-    today = datetime.today().date()
-    found = False
-
-    print("\n--- Search Results ---")
-    for t in tablets:
-        if search_name in t["name"].lower():
-            expiry_date = datetime.strptime(t["expiry"], "%Y-%m-%d").date()
-            days_left = (expiry_date - today).days
-
-            if days_left < 0:
-                status = "EXPIRED ❌"
-            elif days_left <= 30:
-                status = f"NEAR EXPIRY ⚠️ ({days_left} days left)"
-            else:
-                status = f"SAFE ✅ ({days_left} days left)"
-
-            print(
-                f"{t['name']} | Qty: {t['qty']} | Expiry: {expiry_date} | {status}"
-            )
-            found = True
-
-    if not found:
-        print("❌ No matching tablet found.")
-
-
-def view_blocked_tablets():
-    tablets = load_tablets()
-    if not tablets:
-        print("No tablets available.")
-        return
-
-    today = datetime.today().date()
-    found = False
-
-    print("\n--- BLOCKED (EXPIRED) TABLETS ---")
-    for t in tablets:
-        expiry_date = datetime.strptime(t["expiry"], "%Y-%m-%d").date()
-        days_left = (expiry_date - today).days
-
-        if days_left < 0:
-            print(
-                f"{t['name']} | Qty: {t['qty']} | Expired on: {expiry_date} ❌"
-            )
-            found = True
-
-    if not found:
-        print("✅ No blocked tablets found.")
-
-
-def add_tablet():
-    tablets = load_tablets()
-
-    print("\n--- Add New Tablet ---")
-    name = input("Enter tablet name: ")
 
     for t in tablets:
         if t["name"].lower() == name.lower():
-            print("❌ Tablet already exists.")
-            return
+            return {"error": "Tablet already exists"}
 
-    qty = int(input("Enter quantity: "))
-    expiry_input = input("Enter expiry date (DD-MM-YYYY): ")
+    expiry_date = parse_date(expiry)
 
-    expiry_date = datetime.strptime(expiry_input, "%d-%m-%Y").date()
     today = datetime.today().date()
 
-    status = "VALID"
-    if expiry_date < today:
-        status = "EXPIRED"
+    status = "EXPIRED" if expiry_date < today else "VALID"
 
     tablets.append({
         "name": name,
-        "qty": qty,
-        "expiry": expiry_date.strftime("%Y-%m-%d"),
+        "qty": int(qty),
+        "expiry": expiry,
         "status": status
     })
 
     save_tablets(tablets)
-    print("✅ Tablet added successfully.")
+    return {"message": "Tablet added successfully"}
 from datetime import datetime
 
-def get_blocked_tablets():
-    tablets = load_tablets()
-    today = datetime.today().date()
-    blocked = []
+def parse_date(date_str):
 
-    for t in tablets:
-        expiry_date = datetime.strptime(t["expiry"], "%Y-%m-%d").date()
-        if expiry_date < today:
-            blocked.append(t)
+    formats = [
+        "%d %m %Y",
+        "%d-%m-%Y",
+        "%Y-%m-%d"
+    ]
 
-    return blocked
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str, fmt).date()
+        except:
+            continue
+
+    raise ValueError("Invalid date format")

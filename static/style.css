@@ -1,0 +1,111 @@
+body{
+margin:0;
+font-family: Arial;
+
+
+background: linear-gradient(
+    135deg,
+    #667eea,
+    #764ba2,
+    #ff758c
+);
+
+background-size: 400% 400%;
+animation: gradientMove 12s ease infinite;
+
+
+}
+
+@keyframes gradientMove{
+0%{ background-position:0% 50%; }
+50%{ background-position:100% 50%; }
+100%{ background-position:0% 50%; }
+}
+
+/* Layout */
+.layout{
+display:flex;
+}
+
+/* Sidebar */
+.sidebar{
+width:220px;
+height:100vh;
+background:#1e293b;
+color:white;
+padding:20px;
+}
+
+.sidebar button{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:none;
+background:#334155;
+color:white;
+cursor:pointer;
+border-radius:6px;
+}
+
+.sidebar{
+width:220px;
+height:100vh;
+
+background: rgba(0,0,0,0.35);
+backdrop-filter: blur(10px);
+
+color:white;
+padding:20px;
+
+
+}
+
+
+/* Main */
+.main{
+.main{
+flex:1;
+padding:30px;
+}
+
+}
+
+/* Cards */
+.card{
+background: rgba(255,255,255,0.18);
+backdrop-filter: blur(12px);
+
+
+padding:20px;
+border-radius:14px;
+margin:10px;
+width:300px;
+
+color:black;
+
+}
+
+.grid{
+display:flex;
+gap:20px;
+}
+
+input{
+width:100%;
+padding:8px;
+margin-top:8px;
+}
+
+button{
+margin-top:10px;
+padding:10px;
+}
+
+.section{
+animation: fade .3s ease;
+}
+
+@keyframes fade{
+from{opacity:0;}
+to{opacity:1;}
+}
