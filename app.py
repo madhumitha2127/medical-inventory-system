@@ -33,7 +33,26 @@ def dashboard():
     return render_template("dashboard.html",
         user=session["user"],
         role=session["role"])
+@app.route("/billing")
+def billing():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    conn = get_db()
+    medicines = conn.execute("SELECT * FROM medicines WHERE quantity > 0").fetchall()
+    conn.close()
+    return render_template("billing.html", medicines=medicines)
 
+@app.route("/sell", methods=["POST"])
+def sell():
+    med_id = request.form["medicine_id"]
+    qty_sold = int(request.form["quantity"])
+    conn = get_db()
+    med = conn.execute("SELECT * FROM medicines WHERE id=?", (med_id,)).fetchone()
+    total = med["price"] * qty_sold
+    conn.execute("UPDATE medicines SET quantity = quantity - ? WHERE id=?", (qty_sold, med_id))
+    conn.commit()
+    conn.close()
+    return "Sold! Total: Rs." + str(total)
 @app.route("/logout")
 def logout():
     session.clear()
