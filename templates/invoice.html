@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice</title>
+</head>
+<body>
+    <h1>Invoice</h1>
+
+    <hr>
+
+    <p><strong>Medicine:</strong> {{ data.name }}</p>
+    <p><strong>Quantity:</strong> {{ data.qty }}</p>
+    <p><strong>Price per unit:</strong> Rs.{{ data.price }}</p>
+    <p><strong>Total:</strong> Rs.{{ data.total }}</p>
+    <p><strong>Sold by:</strong> {{ data.seller }}</p>
+    <p><strong>Date:</strong> {{ data.date }}</p>
+
+    <hr>
+
+    <button onclick="window.print()">Print Invoice</button>
+    <a href="/billing">New Sale</a> |
+    <a href="/dashboard">Dashboard</a>
+
+</body>
+</html>

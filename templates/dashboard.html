@@ -5,6 +5,9 @@
 </head>
 <body>
     <h1>Welcome, {{ user }}!</h1>
+    {% for alert in alerts %}
+    <p style="color:red;">{{ alert }}</p>
+    {% endfor %}
     <p>Role: {{ role }}</p>
 
     <hr>
@@ -13,6 +16,6 @@
     <a href="/inventory">Inventory</a> |
     <a href="/billing">Billing</a> |
     <a href="/logout">Logout</a>
-
+    <a href="/analytics">Analytics</a> |
 </body>
 </html>

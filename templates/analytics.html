@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analytics</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+</head>
+<body>
+    <h1>Analytics</h1>
+    <a href="/dashboard">Back to Dashboard</a> |
+    <a href="/logout">Logout</a>
+
+    <hr>
+
+    <h2>Total Revenue: Rs.{{ total_revenue }}</h2>
+    <h2>Total Items Sold: {{ total_sold }}</h2>
+
+    <hr>
+
+    <h2>Top Selling Medicines</h2>
+    <canvas id="topChart" width="400" height="200"></canvas>
+
+    <script>
+        new Chart(document.getElementById("topChart"), {
+            type: "bar",
+            data: {
+                labels: {{ top_labels|safe }},
+                datasets: [{
+                    label: "Units Sold",
+                    data: {{ top_values|safe }},
+                    backgroundColor: "rgba(0, 201, 167, 0.7)"
+                }]
+            }
+        });
+    </script>
+
+</body>
+</html>

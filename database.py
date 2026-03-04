@@ -21,8 +21,20 @@ def init_db():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sales (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            medicine_name TEXT NOT NULL,
+            quantity_sold INTEGER NOT NULL,
+            total_price   REAL NOT NULL,
+            sold_by       TEXT NOT NULL,
+            sold_on       TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
     conn.close()
+
 if __name__ == "__main__":
     init_db()
     print("Database created successfully!")
