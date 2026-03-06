@@ -17,7 +17,9 @@ def init_db():
             name        TEXT NOT NULL,
             quantity    INTEGER NOT NULL,
             price       REAL NOT NULL,
-            expiry_date TEXT NOT NULL
+            expiry_date TEXT NOT NULL,
+            usage        TEXT,
+            restrictions TEXT
         )
     """)
 

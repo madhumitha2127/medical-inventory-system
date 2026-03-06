@@ -42,8 +42,76 @@ def billing():
     conn = get_db()
     medicines = conn.execute("SELECT * FROM medicines WHERE quantity > 0").fetchall()
     conn.close()
-    return render_template("billing.html", medicines=medicines)
+    cart = session.get("cart", [])
+    cart_total = sum(item["total"] for item in cart)
+    return render_template("billing.html", medicines=medicines, cart=cart, cart_total=cart_total)
+@app.route("/add_to_cart", methods=["POST"])
+def add_to_cart():
+    if "cart" not in session:
+        session["cart"] = []
+    med_id = request.form["medicine_id"]
+    qty = int(request.form["quantity"])
+    conn = get_db()
+    med = conn.execute("SELECT * FROM medicines WHERE id=?", (med_id,)).fetchone()
+    conn.close()
+    cart = session["cart"]
+    cart.append({
+        "id": med["id"],
+        "name": med["name"],
+        "qty": qty,
+        "price": med["price"],
+        "total": med["price"] * qty,
+        "usage": med["usage"] or "N/A",
+        "restrictions": med["restrictions"] or "N/A"
+    })
+    session["cart"] = cart
+    return redirect(url_for("billing"))
 
+@app.route("/clear_cart")
+def clear_cart():
+    session.pop("cart", None)
+    return redirect(url_for("billing"))
+@app.route("/checkout", methods=["POST"])
+def checkout():
+    cart = session.get("cart", [])
+    if not cart:
+        return redirect(url_for("billing"))
+    
+    conn = get_db()
+    for item in cart:
+        conn.execute("UPDATE medicines SET quantity = quantity - ? WHERE id=?", 
+                     (item["qty"], item["id"]))
+        conn.execute("INSERT INTO sales (medicine_name, quantity_sold, total_price, sold_by) VALUES (?,?,?,?)",
+                     (item["name"], item["qty"], item["total"], session["user"]))
+    conn.commit()
+    conn.close()
+
+    import qrcode, base64, io
+    cart_total = sum(item["total"] for item in cart)
+    
+    qr_text = "MEDITRACK BILL\n"
+    qr_text += "================\n"
+    for item in cart:
+        google = "https://www.google.com/search?q=" + item["name"].replace(" ", "+") + "+medicine+usage"
+        qr_text += f"{item['name']} x{item['qty']} = Rs.{item['total']}\n"
+        qr_text += f"Usage: {item['usage']}\n"
+        qr_text += f"Restrictions: {item['restrictions']}\n"
+        qr_text += f"Info: {google}\n\n"
+    qr_text += f"TOTAL: Rs.{cart_total}"
+
+    qr = qrcode.make(qr_text)
+    buffer = io.BytesIO()
+    qr.save(buffer, format="PNG")
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    session["last_bill"] = {
+        "cart": cart,
+        "total": cart_total,
+        "seller": session["user"],
+        "qr": qr_base64
+    }
+    session.pop("cart", None)
+    return redirect(url_for("invoice"))
 @app.route("/sell", methods=["POST"])
 def sell():
     med_id = request.form["medicine_id"]
@@ -51,27 +119,47 @@ def sell():
     conn = get_db()
     med = conn.execute("SELECT * FROM medicines WHERE id=?", (med_id,)).fetchone()
     total = med["price"] * qty_sold
+
     conn.execute("UPDATE medicines SET quantity = quantity - ? WHERE id=?", (qty_sold, med_id))
     conn.execute("INSERT INTO sales (medicine_name, quantity_sold, total_price, sold_by) VALUES (?,?,?,?)",
                  (med["name"], qty_sold, total, session["user"]))
     conn.commit()
     conn.close()
+
+    import qrcode, base64, io
+    google_link = "https://www.google.com/search?q=" + med["name"].replace(" ", "+") + "+medicine+usage"
+    qr_data = f"""
+BILL RECEIPT
+Medicine: {med['name']}
+Qty: {qty_sold}
+Price: Rs.{med['price']}
+Total: Rs.{total}
+Usage: {med['usage'] or 'N/A'}
+Restrictions: {med['restrictions'] or 'N/A'}
+More Info: {google_link}
+"""
+    qr = qrcode.make(qr_data)
+    buffer = io.BytesIO()
+    qr.save(buffer, format="PNG")
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
     return redirect(url_for("invoice",
         name=med["name"],
         qty=qty_sold,
         price=med["price"],
         total=total,
-        seller=session["user"]
+        seller=session["user"],
+        qr=qr_base64
     ))
 @app.route("/invoice")
 def invoice():
     from datetime import datetime
+    bill = session.get("last_bill", {})
     data = {
-        "name": request.args.get("name"),
-        "qty": request.args.get("qty"),
-        "price": request.args.get("price"),
-        "total": request.args.get("total"),
-        "seller": request.args.get("seller"),
+        "cart": bill.get("cart", []),
+        "total": bill.get("total", 0),
+        "seller": bill.get("seller", ""),
+        "qr": bill.get("qr", ""),
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     return render_template("invoice.html", data=data)
@@ -113,10 +201,7 @@ def analytics():
         top_values=top_values
     )
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
+
 @app.route("/inventory")
 def inventory():
     if "user" not in session:
@@ -132,11 +217,17 @@ def add_medicine():
     quantity = request.form["quantity"]
     price = request.form["price"]
     expiry_date = request.form["expiry_date"]
+    usage = request.form["usage"]
+    restrictions = request.form["restrictions"]
     conn = get_db()
-    conn.execute("INSERT INTO medicines (name, quantity, price, expiry_date) VALUES (?,?,?,?)",
-                 (name, quantity, price, expiry_date))
+    conn.execute("INSERT INTO medicines (name, quantity, price, expiry_date, usage, restrictions) VALUES (?,?,?,?,?,?)",
+                 (name, quantity, price, expiry_date, usage, restrictions))
     conn.commit()
     conn.close()
     return redirect(url_for("inventory"))
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 if __name__ == "__main__":
     app.run(debug=True)

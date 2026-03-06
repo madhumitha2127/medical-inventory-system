@@ -4,21 +4,48 @@
     <title>Invoice</title>
 </head>
 <body>
-    <h1>Invoice</h1>
+    <h1>MediTrack Invoice</h1>
+    <hr>
+
+    <p><strong>Date:</strong> {{ data.date }}</p>
+    <p><strong>Sold by:</strong> {{ data.seller }}</p>
 
     <hr>
 
-    <p><strong>Medicine:</strong> {{ data.name }}</p>
-    <p><strong>Quantity:</strong> {{ data.qty }}</p>
-    <p><strong>Price per unit:</strong> Rs.{{ data.price }}</p>
-    <p><strong>Total:</strong> Rs.{{ data.total }}</p>
-    <p><strong>Sold by:</strong> {{ data.seller }}</p>
-    <p><strong>Date:</strong> {{ data.date }}</p>
+    <h2>Items</h2>
+    <table border="1">
+        <tr>
+            <th>Medicine</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th>Total</th>
+            <th>Usage</th>
+            <th>Restrictions</th>
+        </tr>
+        {% for item in data.cart %}
+        <tr>
+            <td>{{ item['name'] }}</td>
+            <td>{{ item['qty'] }}</td>
+            <td>Rs.{{ item['price'] }}</td>
+            <td>Rs.{{ item['total'] }}</td>
+            <td>{{ item['usage'] }}</td>
+            <td>{{ item['restrictions'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>Grand Total: Rs.{{ data.total }}</h2>
+
+    <hr>
+
+    <h3>Scan QR for Medicine Info</h3>
+    <img src="data:image/png;base64,{{ data.qr }}" width="250" height="250"/>
+    <p>Scan to see usage, restrictions and Google info!</p>
 
     <hr>
 
     <button onclick="window.print()">Print Invoice</button>
-    <a href="/billing">New Sale</a> |
+    <a href="/billing">New Bill</a> |
     <a href="/dashboard">Dashboard</a>
 
 </body>

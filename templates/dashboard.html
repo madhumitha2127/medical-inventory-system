@@ -1,21 +1,36 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>MediTrack Dashboard</title>
-</head>
-<body>
-    <h1>Welcome, {{ user }}!</h1>
-    {% for alert in alerts %}
-    <p style="color:red;">{{ alert }}</p>
-    {% endfor %}
-    <p>Role: {{ role }}</p>
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
 
-    <hr>
+{% block content %}
+<h2 class="mb-4">📊 Dashboard</h2>
 
-    <h2>Quick Actions</h2>
-    <a href="/inventory">Inventory</a> |
-    <a href="/billing">Billing</a> |
-    <a href="/logout">Logout</a>
-    <a href="/analytics">Analytics</a> |
-</body>
-</html>
+{% for alert in alerts %}
+<div class="alert alert-warning">{{ alert }}</div>
+{% endfor %}
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <h3 style="color:#00c9a7;">💊</h3>
+            <h5>Inventory</h5>
+            <a href="/inventory" class="btn btn-primary btn-sm mt-2">View</a>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <h3 style="color:#00c9a7;">🛒</h3>
+            <h5>Billing</h5>
+            <a href="/billing" class="btn btn-primary btn-sm mt-2">Open</a>
+        </div>
+    </div>
+    {% if role == 'admin' %}
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <h3 style="color:#00c9a7;">📈</h3>
+            <h5>Analytics</h5>
+            <a href="/analytics" class="btn btn-primary btn-sm mt-2">View</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
