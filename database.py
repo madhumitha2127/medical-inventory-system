@@ -20,6 +20,8 @@ def init_db():
             expiry_date TEXT NOT NULL,
             usage        TEXT,
             restrictions TEXT
+            dosage       TEXT,
+            side_effects TEXT
         )
     """)
 

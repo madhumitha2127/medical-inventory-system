@@ -30,11 +30,22 @@ def login():
 def dashboard():
     if "user" not in session:
         return redirect(url_for("login"))
+    conn = get_db()
+    total_medicines = conn.execute("SELECT COUNT(*) FROM medicines").fetchone()[0]
+    total_revenue = conn.execute("SELECT SUM(total_price) FROM sales").fetchone()[0] or 0
+    total_sold = conn.execute("SELECT SUM(quantity_sold) FROM sales").fetchone()[0] or 0
+    recent_sales = conn.execute("SELECT * FROM sales ORDER BY sold_on DESC LIMIT 5").fetchall()
+    conn.close()
     alerts = get_alerts()
     return render_template("dashboard.html",
         user=session["user"],
         role=session["role"],
-        alerts=alerts)      
+        alerts=alerts,
+        total_medicines=total_medicines,
+        total_revenue=round(total_revenue, 2),
+        total_sold=total_sold,
+        recent_sales=recent_sales
+    )     
 @app.route("/billing")
 def billing():
     if "user" not in session:
@@ -184,24 +195,36 @@ def get_alerts():
 def analytics():
     if "user" not in session:
         return redirect(url_for("login"))
+    import json
     conn = get_db()
     total_revenue = conn.execute("SELECT SUM(total_price) FROM sales").fetchone()[0] or 0
     total_sold = conn.execute("SELECT SUM(quantity_sold) FROM sales").fetchone()[0] or 0
     top_medicines = conn.execute("""
-        SELECT medicine_name, SUM(quantity_sold) as total_qty
+        SELECT medicine_name, SUM(quantity_sold) as total_qty, SUM(total_price) as total_rev
         FROM sales GROUP BY medicine_name ORDER BY total_qty DESC LIMIT 5
     """).fetchall()
+    daily_sales = conn.execute("""
+    SELECT DATE(sold_on) as sold_on, SUM(total_price) as daily_rev
+    FROM sales GROUP BY DATE(sold_on) ORDER BY DATE(sold_on) DESC LIMIT 7
+    """).fetchall()
+    all_sales_raw = conn.execute("SELECT * FROM sales ORDER BY sold_on DESC").fetchall()
+    all_sales = json.dumps([{"medicine_name": r["medicine_name"], "quantity_sold": r["quantity_sold"], "total_price": r["total_price"], "sold_by": r["sold_by"], "sold_on": r["sold_on"]} for r in all_sales_raw])
     conn.close()
-    top_labels = [r["medicine_name"] for r in top_medicines]
-    top_values = [r["total_qty"] for r in top_medicines]
+    top_labels = json.dumps([r["medicine_name"] for r in top_medicines])
+    top_values = json.dumps([r["total_qty"] for r in top_medicines])
+    top_revenue = json.dumps([round(r["total_rev"], 2) for r in top_medicines])
+    daily_labels = json.dumps([r["sold_on"] for r in daily_sales][::-1])
+    daily_values = json.dumps([round(r["daily_rev"], 2) for r in daily_sales][::-1])
     return render_template("analytics.html",
         total_revenue=round(total_revenue, 2),
         total_sold=total_sold,
         top_labels=top_labels,
-        top_values=top_values
+        top_values=top_values,
+        top_revenue=top_revenue,
+        daily_labels=daily_labels,
+        daily_values=daily_values,
+        all_sales=all_sales
     )
-
-
 @app.route("/inventory")
 def inventory():
     if "user" not in session:
@@ -209,7 +232,10 @@ def inventory():
     conn = get_db()
     medicines = conn.execute("SELECT * FROM medicines").fetchall()
     conn.close()
-    return render_template("inventory.html", medicines=medicines)
+    return render_template("inventory.html", 
+        medicines=medicines,
+        user=session["user"],
+        role=session["role"])
 
 @app.route("/add_medicine", methods=["POST"])
 def add_medicine():
@@ -217,14 +243,26 @@ def add_medicine():
     quantity = request.form["quantity"]
     price = request.form["price"]
     expiry_date = request.form["expiry_date"]
-    usage = request.form["usage"]
+    dosage = request.form["dosage"]
     restrictions = request.form["restrictions"]
+    side_effects = request.form["side_effects"]
     conn = get_db()
-    conn.execute("INSERT INTO medicines (name, quantity, price, expiry_date, usage, restrictions) VALUES (?,?,?,?,?,?)",
-                 (name, quantity, price, expiry_date, usage, restrictions))
+    conn.execute("INSERT INTO medicines (name, quantity, price, expiry_date, dosage, restrictions, side_effects) VALUES (?,?,?,?,?,?,?)",
+                 (name, quantity, price, expiry_date, dosage, restrictions, side_effects))
     conn.commit()
     conn.close()
     return redirect(url_for("inventory"))
+def delete_medicine(med_id):
+    if session.get("role") != "admin":
+        return redirect(url_for("login"))
+    conn = get_db()
+    conn.execute("DELETE FROM medicines WHERE id=?", (med_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("inventory"))
+    conn.close()
+    return redirect(url_for("inventory"))
+
 @app.route("/logout")
 def logout():
     session.clear()

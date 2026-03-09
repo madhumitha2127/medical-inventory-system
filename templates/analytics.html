@@ -2,38 +2,289 @@
 {% block title %}Analytics{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">📈 Analytics</h2>
+<style>
+@keyframes fadeIn {
+    from {opacity:0; transform:translateY(20px)}
+    to {opacity:1; transform:translateY(0)}
+}
+.stat-card {
+    background:white; border-radius:16px; padding:28px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.08);
+    animation:fadeIn 0.5s ease forwards; opacity:0;
+    border-left:4px solid; transition:transform 0.3s; text-align:center;
+}
+.stat-card:hover { transform:translateY(-4px); }
+.stat-card:nth-child(1){animation-delay:0.1s;border-color:#00c9a7;}
+.stat-card:nth-child(2){animation-delay:0.2s;border-color:#007cf0;}
+.stat-card:nth-child(3){animation-delay:0.3s;border-color:#ffc107;}
+.stat-card:nth-child(4){animation-delay:0.4s;border-color:#e74c3c;}
+.stat-icon { font-size:2rem; margin-bottom:8px; }
+.stat-value { font-size:2rem; font-weight:800; margin-bottom:4px; }
+.stat-label { color:#888; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.5px; }
+.chart-card {
+    background:white; border-radius:16px; padding:24px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.08);
+    animation:fadeIn 0.5s ease forwards; opacity:0;
+}
+.chart-card:nth-child(1){animation-delay:0.5s;}
+.chart-card:nth-child(2){animation-delay:0.6s;}
+.chart-card:nth-child(3){animation-delay:0.7s;}
+.section-title { color:#888; text-transform:uppercase; letter-spacing:1px; font-size:0.78rem; font-weight:600; margin-bottom:16px; }
+.month-btn { padding:8px 16px; border:none; border-radius:20px; cursor:pointer; font-size:0.85rem; font-weight:600; background:#f0f0f0; color:#888; transition:all 0.2s; }
+.month-btn:hover { background:#e0e0e0; }
+</style>
 
-<div style="display:flex; gap:20px; margin-bottom:24px;">
-    <div style="background:white; border-radius:12px; padding:20px; flex:1; text-align:center; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
-        <h3 style="color:#00c9a7;">💰</h3>
-        <h4>Rs.{{ total_revenue }}</h4>
-        <p style="color:#888;">Total Revenue</p>
+<h2 style="color:#1a1a2e; font-weight:700; margin-bottom:24px;">📊 Analytics Dashboard</h2>
+
+<!-- Search & Compare -->
+<div style="background:white; border-radius:16px; padding:24px; box-shadow:0 4px 15px rgba(0,0,0,0.08); margin-bottom:28px;">
+    <p class="section-title">🔎 Search & Compare Medicine Sales</p>
+
+    <!-- Month Filter -->
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+        <button class="month-btn" id="btn-all" onclick="setMonth('')" style="background:#00c9a7; color:white;">All</button>
+        <button class="month-btn" id="btn-01" onclick="setMonth('2026-01')">Jan</button>
+        <button class="month-btn" id="btn-02" onclick="setMonth('2026-02')">Feb</button>
+        <button class="month-btn" id="btn-03" onclick="setMonth('2026-03')">Mar</button>
+        <button class="month-btn" id="btn-04" onclick="setMonth('2026-04')">Apr</button>
+        <button class="month-btn" id="btn-05" onclick="setMonth('2026-05')">May</button>
+        <button class="month-btn" id="btn-06" onclick="setMonth('2026-06')">Jun</button>
+        <button class="month-btn" id="btn-07" onclick="setMonth('2026-07')">Jul</button>
+        <button class="month-btn" id="btn-08" onclick="setMonth('2026-08')">Aug</button>
+        <button class="month-btn" id="btn-09" onclick="setMonth('2026-09')">Sep</button>
+        <button class="month-btn" id="btn-10" onclick="setMonth('2026-10')">Oct</button>
+        <button class="month-btn" id="btn-11" onclick="setMonth('2026-11')">Nov</button>
+        <button class="month-btn" id="btn-12" onclick="setMonth('2026-12')">Dec</button>
     </div>
-    <div style="background:white; border-radius:12px; padding:20px; flex:1; text-align:center; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
-        <h3 style="color:#00c9a7;">📦</h3>
-        <h4>{{ total_sold }}</h4>
-        <p style="color:#888;">Items Sold</p>
+
+    <!-- Search Input -->
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+        <div style="position:relative; flex:1;">
+            <input type="text" id="searchInput" placeholder="Type medicine name to add..."
+                style="width:100%; padding:12px 16px; border:1px solid #eee; border-radius:10px; font-size:0.95rem; outline:none;"
+                oninput="showSuggestions()"/>
+            <div id="suggestions" style="display:none; position:absolute; background:white; border:1px solid #eee; border-radius:10px; width:100%; z-index:100; box-shadow:0 4px 15px rgba(0,0,0,0.1);"></div>
+        </div>
+        <button onclick="clearAll()" style="padding:12px 20px; background:#f0f0f0; border:none; border-radius:10px; cursor:pointer; color:#888; font-weight:600;">✕ Clear All</button>
+    </div>
+
+    <!-- Selected Tags -->
+    <div id="selectedTags" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;"></div>
+
+    <!-- Results Table -->
+    <div id="searchResults" style="display:none;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th style="padding:10px; text-align:left; font-size:0.78rem; color:#888; border-bottom:2px solid #f0f0f0;">Medicine</th>
+                    <th style="padding:10px; text-align:left; font-size:0.78rem; color:#888; border-bottom:2px solid #f0f0f0;">Qty Sold</th>
+                    <th style="padding:10px; text-align:left; font-size:0.78rem; color:#888; border-bottom:2px solid #f0f0f0;">Total</th>
+                    <th style="padding:10px; text-align:left; font-size:0.78rem; color:#888; border-bottom:2px solid #f0f0f0;">Sold By</th>
+                    <th style="padding:10px; text-align:left; font-size:0.78rem; color:#888; border-bottom:2px solid #f0f0f0;">Date</th>
+                </tr>
+            </thead>
+            <tbody id="searchBody"></tbody>
+        </table>
+        <div id="searchTotal" style="text-align:right; padding:12px; font-weight:700; color:#00c9a7; font-size:1.1rem;"></div>
+    </div>
+
+    <!-- Search Chart -->
+    <div id="searchChartDiv" style="display:none; margin-top:20px;">
+        <p class="section-title">📊 Comparison Chart</p>
+        <canvas id="searchChart" height="80"></canvas>
     </div>
 </div>
 
-<div style="background:white; border-radius:12px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
-    <h5>Top Selling Medicines</h5>
-    <canvas id="topChart" height="100"></canvas>
+<!-- Stat Cards -->
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px;">
+    <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value" style="color:#00c9a7;">Rs.{{ total_revenue }}</div>
+        <div class="stat-label">Total Revenue</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-value" style="color:#007cf0;">{{ total_sold }}</div>
+        <div class="stat-label">Items Sold</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">💊</div>
+        <div class="stat-value" style="color:#ffc107;">{{ top_labels|length }}</div>
+        <div class="stat-label">Medicines Sold</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📈</div>
+        <div class="stat-value" style="color:#e74c3c;">
+            {% if total_sold > 0 %}{{ ((total_revenue / total_sold)|round(1)) }}{% else %}0{% endif %}
+        </div>
+        <div class="stat-label">Avg Price / Item</div>
+    </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<!-- Charts Row -->
+<div style="display:grid; grid-template-columns:2fr 1fr; gap:20px; margin-bottom:20px;">
+    <div class="chart-card">
+        <p class="section-title">🏆 Top Selling Medicines</p>
+        <canvas id="barChart" height="120"></canvas>
+    </div>
+    <div class="chart-card">
+        <p class="section-title">🍩 Revenue Share</p>
+        <canvas id="donutChart" height="120"></canvas>
+    </div>
+</div>
+
+<!-- Line Chart -->
+<div class="chart-card" style="margin-bottom:20px;">
+    <p class="section-title">📈 Daily Sales Trend</p>
+    <canvas id="lineChart" height="60"></canvas>
+</div>
+
+<script src="/static/chart.min.js"></script>
 <script>
-    new Chart(document.getElementById("topChart"), {
-        type: "bar",
-        data: {
-            labels: {{ top_labels|safe }},
-            datasets: [{
-                label: "Units Sold",
-                data: {{ top_values|safe }},
-                backgroundColor: "rgba(0, 201, 167, 0.7)"
-            }]
+const allSales = {{ all_sales|safe }};
+const selectedMeds = [];
+let searchChartInstance = null;
+let selectedMonth = "";
+
+// Month filter
+function setMonth(val) {
+    selectedMonth = val;
+    const ids = ["all","01","02","03","04","05","06","07","08","09","10","11","12"];
+    ids.forEach(b => {
+        const btn = document.getElementById("btn-" + b);
+        btn.style.background = "#f0f0f0";
+        btn.style.color = "#888";
+    });
+    const activeId = val === "" ? "btn-all" : "btn-" + val.split("-")[1];
+    document.getElementById(activeId).style.background = "#00c9a7";
+    document.getElementById(activeId).style.color = "white";
+    updateResults();
+}
+
+// Suggestions
+function showSuggestions() {
+    const query = document.getElementById("searchInput").value.toLowerCase();
+    const sugDiv = document.getElementById("suggestions");
+    if (query.length < 1) { sugDiv.style.display = "none"; return; }
+    const names = [...new Set(allSales.map(s => s.medicine_name))];
+    const filtered = names.filter(n => n.toLowerCase().includes(query) && !selectedMeds.includes(n));
+    if (filtered.length === 0) { sugDiv.style.display = "none"; return; }
+    sugDiv.innerHTML = filtered.map(n => `
+        <div onclick="addMedicine('${n}')" style="padding:10px 16px; cursor:pointer; border-bottom:1px solid #f0f0f0; font-size:0.9rem;"
+            onmouseover="this.style.background='#f0fff8'" onmouseout="this.style.background='white'">
+            💊 ${n}
+        </div>
+    `).join("");
+    sugDiv.style.display = "block";
+}
+
+function addMedicine(name) {
+    if (selectedMeds.includes(name)) return;
+    selectedMeds.push(name);
+    document.getElementById("searchInput").value = "";
+    document.getElementById("suggestions").style.display = "none";
+    updateTags();
+    updateResults();
+}
+
+function removeMedicine(name) {
+    const idx = selectedMeds.indexOf(name);
+    if (idx > -1) selectedMeds.splice(idx, 1);
+    updateTags();
+    updateResults();
+}
+
+function updateTags() {
+    const tagColors = ["#00c9a7","#007cf0","#ffc107","#e74c3c","#9b59b6"];
+    document.getElementById("selectedTags").innerHTML = selectedMeds.map((name, i) => `
+        <span style="background:${tagColors[i%tagColors.length]}20; color:${tagColors[i%tagColors.length]};
+            padding:6px 12px; border-radius:20px; font-size:0.85rem; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+            💊 ${name}
+            <span onclick="removeMedicine('${name}')" style="cursor:pointer; font-weight:700;">✕</span>
+        </span>
+    `).join("");
+}
+
+function updateResults() {
+    if (selectedMeds.length === 0) {
+        document.getElementById("searchResults").style.display = "none";
+        document.getElementById("searchChartDiv").style.display = "none";
+        return;
+    }
+    const filtered = allSales.filter(s =>
+        selectedMeds.includes(s.medicine_name) &&
+        (selectedMonth === "" || s.sold_on.startsWith(selectedMonth))
+    );
+    const tagColors = ["#00c9a7","#007cf0","#ffc107","#e74c3c","#9b59b6"];
+    document.getElementById("searchBody").innerHTML = filtered.map(s => {
+        const color = tagColors[selectedMeds.indexOf(s.medicine_name) % tagColors.length];
+        return `<tr style="border-bottom:1px solid #f8f8f8;">
+            <td style="padding:10px;"><span style="color:${color}; font-weight:700;">💊 ${s.medicine_name}</span></td>
+            <td style="padding:10px;">${s.quantity_sold}</td>
+            <td style="padding:10px; color:#00c9a7; font-weight:600;">Rs.${s.total_price}</td>
+            <td style="padding:10px; color:#888;">${s.sold_by}</td>
+            <td style="padding:10px; color:#888; font-size:0.85rem;">${s.sold_on}</td>
+        </tr>`;
+    }).join("");
+    const total = filtered.reduce((sum, s) => sum + s.total_price, 0);
+    document.getElementById("searchTotal").textContent = "Total: Rs." + total.toFixed(2);
+    document.getElementById("searchResults").style.display = filtered.length > 0 ? "block" : "none";
+
+    // Chart
+    const allDates = [...new Set(filtered.map(s => s.sold_on))].sort();
+    const datasets = selectedMeds.map((name, i) => ({
+        label: name,
+        data: allDates.map(d => {
+            const s = filtered.find(f => f.medicine_name === name && f.sold_on === d);
+            return s ? s.total_price : 0;
+        }),
+        borderColor: tagColors[i % tagColors.length],
+        backgroundColor: tagColors[i % tagColors.length] + "20",
+        borderWidth: 2.5, fill: false, tension: 0.4, pointRadius: 4
+    }));
+    document.getElementById("searchChartDiv").style.display = "block";
+    if (searchChartInstance) searchChartInstance.destroy();
+    searchChartInstance = new Chart(document.getElementById("searchChart"), {
+        type: "line",
+        data: { labels: allDates, datasets: datasets },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: "bottom" } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { color: "#888" } },
+                x: { grid: { display: false }, ticks: { color: "#888" } }
+            }
         }
     });
+}
+
+function clearAll() {
+    selectedMeds.length = 0;
+    document.getElementById("searchInput").value = "";
+    document.getElementById("suggestions").style.display = "none";
+    updateTags();
+    updateResults();
+}
+
+// Main charts
+const colors = ["rgba(0,201,167,0.85)","rgba(0,124,240,0.85)","rgba(255,193,7,0.85)","rgba(231,76,60,0.85)","rgba(155,89,182,0.85)"];
+
+new Chart(document.getElementById("barChart"), {
+    type: "bar",
+    data: { labels: {{ top_labels|safe }}, datasets: [{ label:"Units Sold", data:{{ top_values|safe }}, backgroundColor:colors, borderRadius:8, borderSkipped:false }] },
+    options: { responsive:true, plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true, grid:{color:"rgba(0,0,0,0.05)"}, ticks:{color:"#888"}}, x:{grid:{display:false}, ticks:{color:"#888"}} } }
+});
+
+new Chart(document.getElementById("donutChart"), {
+    type: "doughnut",
+    data: { labels: {{ top_labels|safe }}, datasets: [{ data:{{ top_revenue|safe }}, backgroundColor:colors, borderWidth:2, borderColor:"#fff" }] },
+    options: { responsive:true, cutout:"65%", plugins:{ legend:{position:"bottom", labels:{color:"#888", font:{size:11}}} } }
+});
+
+new Chart(document.getElementById("lineChart"), {
+    type: "line",
+    data: { labels: {{ daily_labels|safe }}, datasets: [{ label:"Revenue (Rs.)", data:{{ daily_values|safe }}, borderColor:"#00c9a7", backgroundColor:"rgba(0,201,167,0.1)", borderWidth:2.5, fill:true, tension:0.4, pointBackgroundColor:"#00c9a7", pointRadius:4 }] },
+    options: { responsive:true, plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true, grid:{color:"rgba(0,0,0,0.05)"}, ticks:{color:"#888"}}, x:{grid:{display:false}, ticks:{color:"#888"}} } }
+});
 </script>
 {% endblock %}
