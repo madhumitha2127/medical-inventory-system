@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+<style>
+    .card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+        animation: fadeIn 0.5s ease;
+    }
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+    label {
+        display: block;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #888;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    input, select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #eee;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        outline: none;
+    }
+    input:focus, select:focus {
+        border-color: #00c9a7;
+        box-shadow: 0 0 0 3px rgba(0,201,167,0.1);
+    }
+    .btn-add {
+        background: linear-gradient(135deg, #00c9a7, #007cf0);
+        color: white;
+        border: none;
+        padding: 12px 28px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        margin-top: 8px;
+    }
+    .btn-add:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,201,167,0.3);
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th {
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 0.78rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f8f8f8;
+        font-size: 0.9rem;
+    }
+    tr:hover td {
+        background: #f8fffd;
+    }
+    .badge-ok {
+        background: rgba(0,201,167,0.1);
+        color: #00c9a7;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+    .badge-low {
+        background: rgba(255,193,7,0.1);
+        color: #ffc107;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+    .badge-expired {
+        background: rgba(231,76,60,0.1);
+        color: #e74c3c;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+    .btn-del {
+        background: rgba(231,76,60,0.1);
+        color: #e74c3c;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        transition: all 0.2s;
+    }
+    .btn-del:hover {
+        background: #e74c3c;
+        color: white;
+    }
+    .btn-link {
+        background: rgba(0,124,240,0.1);
+        color: #007cf0;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        text-decoration: none;
+    }
+    .section-title {
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 16px;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h2 style="color:#1a1a2e; font-weight:700;">🗄️ Inventory Management</h2>
+</div>
+
+{% if role == 'admin' %}
+<div class="card">
+    <p class="section-title">➕ Add New Medicine</p>
+    <form method="POST" action="/add_medicine" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <div class="form-grid">
+            <div>
+                <label>Medicine Name</label>
+                <input type="text" name="name" placeholder="e.g. Paracetamol 500mg" required/>
+            </div>
+
+            <div>
+                <label>Batch Number</label>
+                <input type="text" name="batch_no" placeholder="e.g. PCM-B101" required/>
+            </div>
+
+            <div>
+                <label>Quantity</label>
+                <input type="number" name="quantity" placeholder="e.g. 100" required/>
+            </div>
+
+            <div>
+                <label>Price (Rs.)</label>
+                <input type="number" step="0.01" name="price" placeholder="e.g. 5.50" required/>
+            </div>
+
+            <div>
+                <label>Expiry Date</label>
+                <input type="date" name="expiry_date" required/>
+            </div>
+
+            <div>
+                <label>Supplier</label>
+                <select name="supplier">
+                    <option value="">-- Select Supplier --</option>
+                    {% for s in suppliers %}
+                    <option value="{{ s.name }}">{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label>Dosage</label>
+                <input type="text" name="dosage" placeholder="e.g. 1 tablet twice daily"/>
+            </div>
+
+            <div>
+                <label>Restrictions</label>
+                <input type="text" name="restrictions" placeholder="e.g. Avoid alcohol"/>
+            </div>
+
+            <div>
+                <label>Side Effects</label>
+                <input type="text" name="side_effects" placeholder="e.g. Nausea, Drowsiness"/>
+            </div>
+
+            <div style="grid-column: span 3;">
+                <label>Medicine Image</label>
+                <input type="file" name="image" accept="image/*" style="border:none; padding:8px 0;"/>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-add">➕ Add Medicine</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <p class="section-title" style="margin-bottom:0;">💊 Medicine Stock</p>
+        <a href="/export_inventory" style="text-decoration:none;">
+            <button class="btn-add" style="margin-top:0;">📁 Export Inventory CSV</button>
+        </a>
+    </div>
+
+    <form method="GET" action="/inventory" style="margin-bottom:20px; display:flex; gap:10px;">
+        <input type="text" name="search" value="{{ request.args.get('search', '') }}" placeholder="Search medicine..." style="padding:10px; border-radius:8px; border:1px solid #ccc; width:250px;">
+        <button type="submit" class="btn-add" style="margin-top:0;">🔍 Search</button>
+    </form>
+
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name / Supplier</th>
+                    <th>Batch</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Expiry</th>
+                    <th>Dosage</th>
+                    <th>Restrictions</th>
+                    <th>Side Effects</th>
+                    <th>Info</th>
+                    <th>Status</th>
+                    {% if role == 'admin' %}
+                    <th style="text-align:right;">Action</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in medicines %}
+                {% set med = item.data %}
+                <tr {% if item.status == "expired" %} style="background:#ffe5e5;"
+                    {% elif item.status == "expiring" %} style="background:#fff3cd;"
+                    {% elif item.status == "low" %} style="background:#fff8e1;"
+                    {% endif %}>
+                    <td style="color:#888;">{{ med['id'] }}</td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            {% if med['image'] %}
+                            <img src="/{{ med['image'] }}" style="width:40px; height:40px; border-radius:6px; object-fit:contain; background:#fff; border:1px solid #eee;" alt="{{ med['name'] }}"/>
+                            {% else %}
+                            <div style="width:40px; height:40px; border-radius:6px; background:#f0f2f5; display:flex; align-items:center; justify-content:center; color:#ccc; font-size:1.2rem;">💊</div>
+                            {% endif %}
+                            <div>
+                                <strong>{{ med['name'] }}</strong>
+                                {% if med['supplier'] %}
+                                <br/><span style="font-size:0.75rem; color:#888;">🏢 {{ med['supplier'] }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ med['batch_no'] }}</td>
+                    <td>{{ med['quantity'] }}</td>
+                    <td style="color:#00c9a7; font-weight:600;">Rs.{{ med['price'] }}</td>
+                    <td style="font-size:0.85rem; color:#555;">{{ med['expiry_date'] }}</td>
+                    <td style="color:#888; font-size:0.85rem;">{{ med['dosage'] or '—' }}</td>
+                    <td style="color:#e74c3c; font-size:0.85rem;">{{ med['restrictions'] or '—' }}</td>
+                    <td style="color:#888; font-size:0.85rem;">{{ med['side_effects'] or '—' }}</td>
+                    <td>
+                        <a href="https://www.google.com/search?q={{ med['name'] }}+medicine" target="_blank" class="btn-link">🔗 Google</a>
+                    </td>
+                    <td>
+                        {% if item.status == "expired" %}
+                            <span class="badge-expired">❌ Expired</span>
+                        {% elif item.status == "expiring" %}
+                            <span class="badge-low">⏳ Expiring Soon</span>
+                        {% elif item.status == "low" %}
+                            <span class="badge-low">⚠️ Low Stock</span>
+                        {% else %}
+                            <span class="badge-ok">✅ Healthy</span>
+                        {% endif %}
+                    </td>
+                    {% if role == 'admin' %}
+                    <td style="text-align:right;">
+                        <a href="/edit_medicine/{{ med.id }}" class="btn-link" style="text-decoration:none; margin-right:4px;">✏️ Edit</a>
+                        <a href="/medicine_qr/{{ med['id'] }}" style="margin-right:4px;">
+                            <button class="btn-link">📦 QR</button>
+                        </a>
+                        <a href="/delete_medicine/{{ med['id'] }}" onclick="return confirm('Delete {{ med.name }}?')">
+                            <button class="btn-del">🗑️</button>
+                        </a>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

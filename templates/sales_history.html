@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Sales History{% endblock %}
+
+{% block content %}
+<style>
+    .card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+        animation: fadeIn 0.5s ease;
+    }
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 120px;
+        gap: 16px;
+        align-items: end;
+    }
+    label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #888;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    input, select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #eee;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        outline: none;
+        transition: all 0.3s;
+    }
+    input:focus, select:focus {
+        border-color: #00c9a7;
+        box-shadow: 0 0 0 3px rgba(0,201,167,0.1);
+    }
+    .btn-action {
+        background: linear-gradient(135deg, #00c9a7, #007cf0);
+        color: white;
+        border: none;
+        padding: 11px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.3s;
+    }
+    .btn-action:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,201,167,0.3);
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    th {
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 0.78rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f8f8f8;
+        font-size: 0.9rem;
+    }
+    tr:hover td {
+        background: #f8fffd;
+    }
+    .summary-card {
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        color: white;
+        border-radius: 16px;
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    .summary-stat {
+        display: flex;
+        gap: 32px;
+    }
+    .stat-item h3 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #00c9a7;
+        margin-bottom: 2px;
+    }
+    .stat-item p {
+        color: rgba(255,255,255,0.6);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .badge-user {
+        background: rgba(0,124,240,0.1);
+        color: #007cf0;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h2 style="color:#1a1a2e; font-weight:700;">📜 Sales History</h2>
+</div>
+
+<!-- Filters Card -->
+<div class="card">
+    <form method="GET" action="/sales_history">
+        <div class="filter-grid">
+            <div>
+                <label>Search Medicine</label>
+                <input type="text" name="search" value="{{ search or '' }}" placeholder="Search by name..."/>
+            </div>
+            <div>
+                <label>Sold By (Seller)</label>
+                <select name="seller">
+                    <option value="">-- All Sellers --</option>
+                    {% for s in sellers %}
+                    <option value="{{ s['sold_by'] }}" {% if seller == s['sold_by'] %}selected{% endif %}>{{ s['sold_by'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Start Date</label>
+                <input type="date" name="start_date" value="{{ start_date or '' }}"/>
+            </div>
+            <div>
+                <label>End Date</label>
+                <input type="date" name="end_date" value="{{ end_date or '' }}"/>
+            </div>
+            <div>
+                <button type="submit" class="btn-action">🔍 Filter</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Summary Card -->
+<div class="summary-card">
+    <div>
+        <h4 style="font-weight:600; margin-bottom:4px;">Filtered Sales Summary</h4>
+        <p style="color:rgba(255,255,255,0.4); font-size:0.85rem;">Aggregated values based on active filters.</p>
+    </div>
+    <div class="summary-stat">
+        <div class="stat-item">
+            <h3>{{ total_qty }}</h3>
+            <p>Total Units Sold</p>
+        </div>
+        <div class="stat-item">
+            <h3>Rs.{{ total_rev }}</h3>
+            <p>Total Revenue</p>
+        </div>
+    </div>
+</div>
+
+<!-- Transactions Card -->
+<div class="card">
+    <p style="color:#888; text-transform:uppercase; font-size:0.8rem; font-weight:600; margin-bottom:16px; letter-spacing:0.5px;">Transaction Logs</p>
+    {% if sales %}
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Medicine</th>
+                    <th>Qty Sold</th>
+                    <th>Total Price</th>
+                    <th>Sold By</th>
+                    <th>Date & Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in sales %}
+                <tr>
+                    <td style="color:#888;">{{ sale['id'] }}</td>
+                    <td><strong>{{ sale['medicine_name'] }}</strong></td>
+                    <td><span style="font-weight:600; color:#1a1a2e;">{{ sale['quantity_sold'] }}</span></td>
+                    <td style="color:#00c9a7; font-weight:600;">Rs.{{ sale['total_price'] }}</td>
+                    <td><span class="badge-user">{{ sale['sold_by'] }}</span></td>
+                    <td style="color:#666; font-size:0.85rem;">{{ sale['sold_on'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="text-align:center; color:#888; padding:30px 0;">No sales matches found for the filters selected.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

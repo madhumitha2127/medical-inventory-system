@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}Billing{% endblock %}
+
+{% block content %}
+<style>
+    .card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+        animation: fadeIn 0.5s ease;
+    }
+    input, select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #eee;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        outline: none;
+        margin-bottom: 12px;
+    }
+    input:focus, select:focus {
+        border-color: #00c9a7;
+        box-shadow: 0 0 0 3px rgba(0,201,167,0.1);
+    }
+    .btn-action {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        display: inline-block;
+        text-decoration: none;
+    }
+    .btn-green {
+        background: linear-gradient(135deg, #00c9a7, #007cf0);
+        color: white;
+    }
+    .btn-green:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,201,167,0.3);
+    }
+    .btn-red {
+        background: rgba(231,76,60,0.1);
+        color: #e74c3c;
+    }
+    .btn-red:hover {
+        background: #e74c3c;
+        color: white;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th {
+        padding: 12px;
+        text-align: left;
+        font-size: 0.8rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    td {
+        padding: 12px;
+        border-bottom: 1px solid #f8f8f8;
+        font-size: 0.9rem;
+    }
+    tr:hover td {
+        background: #f8fffd;
+    }
+    .med-info {
+        background: #f0fff8;
+        border: 1px solid #00c9a7;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+        display: none;
+        animation: fadeIn 0.4s ease;
+    }
+    .search-results {
+        border: 1px solid #eee;
+        border-radius: 10px;
+        background: white;
+        max-height: 220px;
+        overflow-y: auto;
+        position: absolute;
+        width: 100%;
+        z-index: 100;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    }
+    .search-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid #fcfcfc;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.2s;
+    }
+    .search-item:hover {
+        background: #f0fff8;
+        color: #00c9a7;
+    }
+    .search-wrap {
+        position: relative;
+        margin-bottom: 16px;
+    }
+    .grand-total {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #00c9a7;
+        text-align: right;
+        padding: 16px 12px;
+        border-top: 2px solid #f8f8f8;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <h2 style="color:#1a1a2e; font-weight:700;">🛒 Billing Counter</h2>
+</div>
+
+<!-- SEARCH & ADD TO CART -->
+<div class="card">
+    <p style="color:#888; text-transform:uppercase; font-size:0.8rem; font-weight:600; margin-bottom:16px; letter-spacing:0.5px;">🔎 Search & Add Medicine</p>
+    <div class="search-wrap">
+        <input type="text" id="searchBox" placeholder="Type medicine name to search..." autocomplete="off" oninput="searchMed()"/>
+        <div class="search-results" id="searchResults" style="display:none;"></div>
+    </div>
+
+    <!-- Selected Medicine Details Card -->
+    <div class="med-info" id="medInfo">
+        <div style="display:flex; gap:16px; align-items:start;">
+            <img id="medInfoImg" src="" style="width:80px; height:80px; border-radius:8px; object-fit:contain; border:1px solid #eee; background:#fff; display:none;" alt="Preview"/>
+            <div>
+                <h4 id="medName" style="color:#1a1a2e; font-weight:700; margin-bottom:4px;"></h4>
+                <p style="font-size:0.9rem; color:#666; margin-bottom:8px;">
+                    Price: <strong>Rs.<span id="medPrice"></span></strong> | Stock Left: <span id="medStock" style="font-weight:600;"></span>
+                </p>
+                <p style="font-size:0.85rem; color:#e67e22; margin-bottom:4px;">Usage: <span id="medUsage" style="font-weight:600;"></span></p>
+                <p style="font-size:0.85rem; color:#e74c3c;">Restrictions: <span id="medRestrictions" style="font-weight:600;"></span></p>
+            </div>
+        </div>
+
+        <form method="POST" action="/add_to_cart" id="cartForm" style="margin-top:16px; display:flex; gap:12px; align-items:center;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="medicine_id" id="selectedMedId"/>
+            <div style="width:160px; margin-bottom:0;">
+                <input type="number" name="quantity" id="qtyInput" placeholder="Qty" min="1" style="display:none; margin-bottom:0;" required/>
+            </div>
+            <button type="submit" class="btn-action btn-green" id="addBtn" style="display:none; padding:11px 24px;">➕ Add to Cart</button>
+        </form>
+    </div>
+</div>
+
+<!-- SHOPPING CART -->
+<div class="card">
+    <p style="color:#888; text-transform:uppercase; font-size:0.8rem; font-weight:600; margin-bottom:16px; letter-spacing:0.5px;">🛒 Checkout Cart</p>
+    {% if cart %}
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Medicine</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th style="text-align:right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart %}
+                <tr>
+                    <td><strong>{{ item['name'] }}</strong></td>
+                    <td><span style="font-weight:600; background:#f0f2f5; padding:4px 8px; border-radius:6px;">{{ item['qty'] }}</span></td>
+                    <td style="color:#666;">Rs.{{ item['price'] }}</td>
+                    <td style="color:#00c9a7; font-weight:600; text-align:right;">Rs.{{ item['total'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="grand-total">Grand Total: Rs.{{ cart_total }}</div>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <a href="/clear_cart" class="btn-action btn-red">🗑️ Clear Cart</a>
+        <form method="POST" action="/checkout" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn-action btn-green">✅ Checkout & Print Bill</button>
+        </form>
+    </div>
+    {% else %}
+    <p style="color:#888; text-align:center; padding:40px 0;">Cart is empty. Type a medicine name in the search bar above to start selling!</p>
+    {% endif %}
+</div>
+
+<div id="medicines-data" data-medicines="{{ medicines | tojson | forceescape }}" style="display:none;"></div>
+
+<!-- Local Medicines Data Search -->
+<script>
+    const medicines = JSON.parse(document.getElementById("medicines-data").getAttribute("data-medicines"));
+
+    function searchMed() {
+        const query = document.getElementById("searchBox").value.toLowerCase();
+        const resultsDiv = document.getElementById("searchResults");
+        if (query.length < 1) { resultsDiv.style.display = "none"; return; }
+        const filtered = medicines.filter(m => m.name.toLowerCase().includes(query));
+        if (filtered.length === 0) { resultsDiv.style.display = "none"; return; }
+        resultsDiv.innerHTML = filtered.map(m => {
+            const imgHtml = m.image 
+                ? `<img src="/${m.image}" style="width:30px; height:30px; border-radius:4px; object-fit:contain; background:#fff; border:1px solid #eee;"/>`
+                : `<div style="width:30px; height:30px; border-radius:4px; background:#eee; display:flex; align-items:center; justify-content:center; font-size:0.8rem; color:#aaa;">💊</div>`;
+            return `<div class="search-item" onclick="selectMed(${m.id})">
+                ${imgHtml}
+                <div>
+                    <strong>${m.name}</strong> — Rs.${m.price} <span style="font-size:0.78rem; color:#888;">(Stock: ${m.quantity})</span>
+                </div>
+            </div>`;
+        }).join("");
+        resultsDiv.style.display = "block";
+    }
+
+    function selectMed(id) {
+        const med = medicines.find(m => m.id === id);
+        document.getElementById("searchBox").value = med.name;
+        document.getElementById("searchResults").style.display = "none";
+        document.getElementById("selectedMedId").value = med.id;
+        document.getElementById("medName").textContent = med.name;
+        document.getElementById("medPrice").textContent = med.price;
+        document.getElementById("medStock").textContent = med.quantity;
+        document.getElementById("medUsage").textContent = med.usage;
+        document.getElementById("medRestrictions").textContent = med.restrictions;
+        
+        const infoImg = document.getElementById("medInfoImg");
+        if (med.image) {
+            infoImg.src = "/" + med.image;
+            infoImg.style.display = "block";
+        } else {
+            infoImg.style.display = "none";
+        }
+
+        document.getElementById("medInfo").style.display = "block";
+        document.getElementById("qtyInput").style.display = "block";
+        document.getElementById("addBtn").style.display = "block";
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Medicine QR</title>
+
+</head>
+
+<body style="
+    font-family:Arial;
+    text-align:center;
+    padding:40px;
+">
+
+    <h1>MediTrack QR Label</h1>
+
+    <hr>
+
+    <h2>{{ med['name'] }}</h2>
+
+    <p>
+        <strong>Batch:</strong>
+        {{ med['batch_no'] }}
+    </p>
+
+    <p>
+        <strong>Expiry:</strong>
+        {{ med['expiry_date'] }}
+    </p>
+
+    <p>
+        <strong>Quantity:</strong>
+        {{ med['quantity'] }}
+    </p>
+
+    <img src="data:image/png;base64,{{ qr }}"
+         width="300"/>
+
+    <br><br>
+
+    <button id="printBtn"
+            style="
+            background:#007cf0;
+            color:white;
+            border:none;
+            padding:14px 24px;
+            border-radius:10px;
+            cursor:pointer;
+            font-size:16px;
+            font-weight:bold;
+            ">
+
+        🖨 Print Label
+
+    </button>
+
+    <script>
+
+    document
+        .getElementById("printBtn")
+        .addEventListener("click", function () {
+
+            window.print();
+
+        });
+
+    </script>
+
+</body>
+
+</html>

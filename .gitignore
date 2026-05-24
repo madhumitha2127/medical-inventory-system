@@ -1,0 +1,23 @@
+# Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite Databases (preventing local state and sensitive data from committing)
+*.db
+*.sqlite3
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv/
+
+# Local CSV exports
+inventory_export.csv
+
+# IDEs & System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
