@@ -1,72 +1,217 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print QR Label — {{ med['name'] }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #090d16;
+            --surface: rgba(18, 26, 45, 0.45);
+            --surface-card: rgba(22, 34, 57, 0.6);
+            --border: rgba(255, 255, 255, 0.08);
+            --primary: #00c9a7;
+            --secondary: #007cf0;
+            --text: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+        }
 
-    <title>Medicine QR</title>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 50% 0%, #121b2d 0%, #090d16 100%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .label-card {
+            background: var(--surface-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            position: relative;
+        }
+
+        .brand {
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, var(--primary) 0%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .med-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            margin-bottom: 24px;
+        }
+
+        .detail-item strong {
+            display: block;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-item span {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .qr-image {
+            background: #ffffff;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            margin-bottom: 30px;
+            display: inline-block;
+            border: 2px solid rgba(255,255,255,0.05);
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(0, 124, 240, 0.3);
+            font-size: 1rem;
+        }
+
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(0, 124, 240, 0.55);
+            filter: brightness(1.1);
+        }
+
+        .btn-back {
+            display: block;
+            margin-top: 14px;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        .btn-back:hover {
+            color: #ffffff;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: #ffffff;
+                color: #000000;
+                padding: 0;
+            }
+            .label-card {
+                border: none;
+                box-shadow: none;
+                background: none;
+                backdrop-filter: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            .btn-print, .btn-back, .brand {
+                display: none;
+            }
+            .details-grid {
+                border: 1px solid #000000;
+                background: none;
+            }
+            .detail-item span, .med-title {
+                color: #000000;
+            }
+            .qr-image {
+                box-shadow: none;
+                border: 1px solid #000000;
+            }
+        }
+    </style>
 </head>
+<body>
 
-<body style="
-    font-family:Arial;
-    text-align:center;
-    padding:40px;
-">
+<div class="label-card">
+    <div class="brand">💊 MEDITRACK QR CODE LABEL</div>
+    
+    <h2 class="med-title">{{ med['name'] }}</h2>
+    
+    <div class="details-grid">
+        <div class="detail-item">
+            <strong>Batch</strong>
+            <span>{{ med['batch_no'] }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>Qty</strong>
+            <span>{{ med['quantity'] }}</span>
+        </div>
+        <div class="detail-item">
+            <strong>Expiry</strong>
+            <span style="font-size: 0.82rem;">{{ med['expiry_date'] }}</span>
+        </div>
+    </div>
+    
+    <div class="qr-image">
+        <img src="data:image/png;base64,{{ qr }}" width="220" height="220" alt="QR Link"/>
+    </div>
+    
+    <button id="printBtn" class="btn-print">🖨 Print QR Label</button>
+    <a href="/inventory" class="btn-back">← Return to Inventory</a>
+</div>
 
-    <h1>MediTrack QR Label</h1>
-
-    <hr>
-
-    <h2>{{ med['name'] }}</h2>
-
-    <p>
-        <strong>Batch:</strong>
-        {{ med['batch_no'] }}
-    </p>
-
-    <p>
-        <strong>Expiry:</strong>
-        {{ med['expiry_date'] }}
-    </p>
-
-    <p>
-        <strong>Quantity:</strong>
-        {{ med['quantity'] }}
-    </p>
-
-    <img src="data:image/png;base64,{{ qr }}"
-         width="300"/>
-
-    <br><br>
-
-    <button id="printBtn"
-            style="
-            background:#007cf0;
-            color:white;
-            border:none;
-            padding:14px 24px;
-            border-radius:10px;
-            cursor:pointer;
-            font-size:16px;
-            font-weight:bold;
-            ">
-
-        🖨 Print Label
-
-    </button>
-
-    <script>
-
-    document
-        .getElementById("printBtn")
-        .addEventListener("click", function () {
-
-            window.print();
-
-        });
-
-    </script>
+<script>
+    document.getElementById("printBtn").addEventListener("click", function () {
+        window.print();
+    });
+</script>
 
 </body>
-
 </html>

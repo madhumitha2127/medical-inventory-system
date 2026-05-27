@@ -5,7 +5,7 @@ import io
 import os
 import secrets
 import pandas as pd
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
 # Generate a cryptographically secure secret key if not set in environment
@@ -35,17 +35,7 @@ def save_uploaded_file(file):
         return image_path, None
     return "", None
 
-# Hashed credentials using scrypt
-users = {
-    "admin": {
-        "password": "scrypt:32768:8:1$zk703vBNGt8535At$3b6b98132d22021e98eb0fbc7ff0953e68da08d0e3c15f5ceaad546e220b67382aeeb9eeca856c2e6e05bbcf8c3e4674ac7d32ff9ebfe26bfa950b97a7cd9416",
-        "role": "admin"
-    },
-    "staff1": {
-        "password": "scrypt:32768:8:1$xJq1b0S0fHhAKHn0$f79848e2bdd89b24bb4a58f54a4420411a5e64cd92449882b2a5078ff355fe6d5bdffa5b779a48e7e65d8ba905d5288be525cc99dd8233d653b6dd039e298961",
-        "role": "staff"
-    }
-}
+# Credentials are now managed dynamically in the SQLite 'users' database table
 
 # Generate a cryptographically secure random session-based CSRF token
 def generate_csrf_token():
@@ -84,10 +74,14 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        if username in users and check_password_hash(users[username]["password"], password):
+        conn = get_db()
+        user_row = conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+        conn.close()
 
-            session["user"] = username
-            session["role"] = users[username]["role"]
+        if user_row and check_password_hash(user_row["password"], password):
+
+            session["user"] = user_row["username"]
+            session["role"] = user_row["role"]
 
             return redirect(url_for("dashboard"))
 
@@ -190,6 +184,22 @@ def add_to_cart():
         "SELECT * FROM medicines WHERE id=?",
         (med_id,)
     ).fetchone()
+
+    if not med:
+        conn.close()
+        return "❌ Error: Medicine not found!", 404
+
+    # Expiry verification
+    from datetime import datetime, date
+    try:
+        expiry = datetime.strptime(med["expiry_date"], "%Y-%m-%d").date()
+        if expiry <= date.today():
+            conn.close()
+            return f"❌ Error: Cannot sell expired medicine '{med['name']}'!", 400
+    except ValueError:
+        conn.close()
+        return "❌ Error: Invalid expiry date in database!", 400
+
     if qty > med["quantity"]:
 
       conn.close()
@@ -239,6 +249,16 @@ def checkout():
         return redirect(url_for("billing"))
 
     conn = get_db()
+
+    # Pre-verify all items in the cart to ensure no concurrent double-spends or oversells
+    for item in cart:
+        med = conn.execute("SELECT quantity FROM medicines WHERE id=?", (item["id"],)).fetchone()
+        if not med:
+            conn.close()
+            return f"❌ Error: Medicine '{item['name']}' no longer exists in database!", 400
+        if med["quantity"] < item["qty"]:
+            conn.close()
+            return f"❌ Error: Not enough stock for '{item['name']}'. Only {med['quantity']} units left!", 400
 
     for item in cart:
 
@@ -426,6 +446,29 @@ def download_invoice():
     pdf.drawString(40, y - 5, "GRAND TOTAL:")
     pdf.drawRightString(545, y - 5, f"Rs. {round(total, 2)}")
     
+    # Draw QR Code on the PDF Receipt
+    qr_base64 = bill.get("qr", "")
+    if qr_base64:
+        import base64
+        from reportlab.lib.utils import ImageReader
+        try:
+            qr_bytes = base64.b64decode(qr_base64)
+            qr_buffer = io.BytesIO(qr_bytes)
+            qr_image = ImageReader(qr_buffer)
+            qr_y = y - 115
+            pdf.drawImage(qr_image, 40, qr_y, width=80, height=80)
+            
+            # QR Explanation text
+            pdf.setFillColorRGB(0.1, 0.1, 0.18)
+            pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(135, qr_y + 60, "📱 Scan QR for Smart Instructions")
+            pdf.setFont("Helvetica", 8)
+            pdf.setFillColorRGB(0.4, 0.4, 0.4)
+            pdf.drawString(135, qr_y + 45, "Scan this QR code using any mobile scanner to instantly view detailed dosage")
+            pdf.drawString(135, qr_y + 32, "recommendations, strict usage restrictions, and additional online lookup details.")
+        except Exception:
+            pass
+            
     # Footer
     pdf.setFillColorRGB(0.6, 0.6, 0.6)
     pdf.setFont("Helvetica-Oblique", 9)
@@ -501,12 +544,29 @@ def add_medicine():
 
     if "user" not in session:
         return redirect(url_for("login"))
+    if session.get("role") != "admin":
+        return "❌ Access Denied: Admin role required!", 403
 
     name = request.form["name"]
     batch_no = request.form["batch_no"]
-    quantity = int(request.form["quantity"])
-    price = float(request.form["price"])
+    try:
+        quantity = int(request.form["quantity"])
+        price = float(request.form["price"])
+    except ValueError:
+        return "❌ Error: Invalid quantity or price format!", 400
+
+    if quantity <= 0 or price <= 0:
+        return "❌ Error: Quantity and price must be positive numbers!", 400
+
     expiry_date = request.form["expiry_date"]
+    from datetime import datetime, date
+    try:
+        expiry = datetime.strptime(expiry_date, "%Y-%m-%d").date()
+        if expiry <= date.today():
+            return "❌ Error: Expiry date must be strictly in the future!", 400
+    except ValueError:
+        return "❌ Error: Invalid expiry date format!", 400
+
     dosage = request.form["dosage"]
     restrictions = request.form["restrictions"]
     side_effects = request.form["side_effects"]
@@ -658,39 +718,61 @@ def analytics():
     ).fetchone()[0] or 0
 
     top_medicines = conn.execute("""
-
         SELECT medicine_name,
                SUM(quantity_sold) as total_qty,
                SUM(total_price) as total_rev
-
         FROM sales
-
         GROUP BY medicine_name
-
         ORDER BY total_qty DESC
-
         LIMIT 5
-
     """).fetchall()
+
+    # Query all sales log for comparison dropdown
+    all_sales = conn.execute("""
+        SELECT medicine_name, quantity_sold, total_price, sold_by, strftime('%Y-%m-%d', sold_on) as sold_on
+        FROM sales
+    """).fetchall()
+    
+    all_sales_list = []
+    for r in all_sales:
+        all_sales_list.append({
+            "medicine_name": r["medicine_name"],
+            "quantity_sold": r["quantity_sold"],
+            "total_price": r["total_price"],
+            "sold_by": r["sold_by"],
+            "sold_on": r["sold_on"]
+        })
+
+    # Prepare array of revenue shares
+    top_revenue_list = [round(r["total_rev"], 2) for r in top_medicines]
+
+    # Daily sales trend
+    daily_sales = conn.execute("""
+        SELECT strftime('%Y-%m-%d', sold_on) as day, SUM(total_price) as rev
+        FROM sales
+        GROUP BY day
+        ORDER BY day ASC
+        LIMIT 15
+    """).fetchall()
+    daily_labels = [r["day"] for r in daily_sales]
+    daily_values = [round(r["rev"], 2) for r in daily_sales]
 
     conn.close()
 
-    top_labels = json.dumps([
-        r["medicine_name"]
-        for r in top_medicines
-    ])
-
-    top_values = json.dumps([
-        r["total_qty"]
-        for r in top_medicines
-    ])
+    top_labels = [r["medicine_name"] for r in top_medicines]
+    top_values = [r["total_qty"] for r in top_medicines]
 
     return render_template(
         "analytics.html",
         total_revenue=round(total_revenue, 2),
         total_sold=total_sold,
-        top_labels=top_labels,
-        top_values=top_values
+        top_labels=json.dumps(top_labels),
+        top_values=json.dumps(top_values),
+        top_revenue=json.dumps(top_revenue_list),
+        all_sales=json.dumps(all_sales_list),
+        daily_labels=json.dumps(daily_labels),
+        daily_values=json.dumps(daily_values),
+        top_medicines_count=len(top_labels)
     )
 @app.route("/export_inventory")
 def export_inventory():
@@ -724,13 +806,17 @@ def export_inventory():
 
     df = pd.DataFrame(data)
 
-    file_path = "inventory_export.csv"
+    import io
+    from flask import Response
+    
+    buffer = io.StringIO()
+    df.to_csv(buffer, index=False)
+    buffer.seek(0)
 
-    df.to_csv(file_path, index=False)
-
-    return send_file(
-        file_path,
-        as_attachment=True
+    return Response(
+        buffer.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=inventory_export.csv"}
     )
 @app.route("/medicine_qr/<int:med_id>")
 def medicine_qr(med_id):
@@ -846,9 +932,32 @@ def edit_medicine(med_id):
 
     if request.method == "POST":
         name = request.form["name"]
-        quantity = int(request.form["quantity"])
-        price = float(request.form["price"])
+        try:
+            quantity = int(request.form["quantity"])
+            price = float(request.form["price"])
+        except ValueError:
+            suppliers = conn.execute("SELECT * FROM suppliers").fetchall()
+            conn.close()
+            return "❌ Error: Invalid quantity or price format!", 400
+
+        if quantity < 0 or price <= 0:
+            suppliers = conn.execute("SELECT * FROM suppliers").fetchall()
+            conn.close()
+            return "❌ Error: Quantity cannot be negative and price must be positive!", 400
+
         expiry_date = request.form["expiry_date"]
+        from datetime import datetime, date
+        try:
+            expiry = datetime.strptime(expiry_date, "%Y-%m-%d").date()
+            if expiry <= date.today():
+                suppliers = conn.execute("SELECT * FROM suppliers").fetchall()
+                conn.close()
+                return "❌ Error: Expiry date must be strictly in the future!", 400
+        except ValueError:
+            suppliers = conn.execute("SELECT * FROM suppliers").fetchall()
+            conn.close()
+            return "❌ Error: Invalid expiry date format!", 400
+
         dosage = request.form["dosage"]
         restrictions = request.form["restrictions"]
         side_effects = request.form["side_effects"]
@@ -983,6 +1092,80 @@ def delete_supplier(sup_id):
     conn.commit()
     conn.close()
     return redirect(url_for("suppliers"))
+
+@app.route("/developer")
+def developer():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    return render_template("developer.html", user=session["user"], role=session["role"])
+
+@app.route("/staff")
+def staff():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    if session.get("role") != "admin":
+        return "❌ Access Denied: Admin role required!", 403
+
+    conn = get_db()
+    users_list = conn.execute("SELECT id, username, role FROM users ORDER BY id ASC").fetchall()
+    conn.close()
+
+    return render_template("staff.html", user=session["user"], role=session["role"], users=users_list)
+
+@app.route("/add_staff", methods=["POST"])
+def add_staff():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    if session.get("role") != "admin":
+        return "❌ Access Denied: Admin role required!", 403
+
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "")
+    role = request.form.get("role", "staff").strip()
+
+    if not username or not password:
+        return "❌ Error: Username and password are required!", 400
+
+    hashed_pw = generate_password_hash(password, method="scrypt")
+
+    conn = get_db()
+    try:
+        conn.execute("""
+            INSERT INTO users (username, password, role)
+            VALUES (?, ?, ?)
+        """, (username, hashed_pw, role))
+        conn.commit()
+    except Exception as e:
+        conn.close()
+        return f"❌ Error: Username '{username}' already exists!", 400
+
+    conn.close()
+    return redirect(url_for("staff"))
+
+@app.route("/delete_staff/<int:user_id>")
+def delete_staff(user_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+    if session.get("role") != "admin":
+        return "❌ Access Denied: Admin role required!", 403
+
+    conn = get_db()
+    
+    # Get user to make sure we don't self-delete the logged-in admin
+    target_user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    if not target_user:
+        conn.close()
+        return "❌ Error: User not found!", 404
+        
+    if target_user["username"] == session["user"]:
+        conn.close()
+        return "❌ Error: You cannot delete your own admin account!", 400
+
+    conn.execute("DELETE FROM users WHERE id=?", (user_id,))
+    conn.commit()
+    conn.close()
+    
+    return redirect(url_for("staff"))
 
 @app.route("/logout")
 def logout():

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Staff Directory & Access Control{% endblock %}
+
+{% block content %}
+<style>
+    /* Interactive Entrance Animations */
+    .staff-container {
+        animation: fadeSlideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    
+    @keyframes fadeSlideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Grid Layout for Control Panel */
+    .admin-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+    @media(min-width: 992px) {
+        .admin-grid {
+            grid-template-columns: 1fr 1.3fr;
+        }
+    }
+
+    /* Custom Modern Table Elements */
+    .table-responsive {
+        overflow-x: auto;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        background: rgba(13, 20, 38, 0.4);
+    }
+    
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th {
+        background: rgba(22, 34, 57, 0.6);
+        padding: 14px 18px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border);
+    }
+    td {
+        padding: 16px 18px;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { 
+        background-color: rgba(255, 255, 255, 0.015);
+        color: #ffffff;
+    }
+
+    .badge-role {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .badge-role.admin {
+        background: rgba(139, 92, 246, 0.15);
+        color: #c084fc;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+    .badge-role.staff {
+        background: rgba(0, 124, 240, 0.12);
+        color: #93c5fd;
+        border: 1px solid rgba(0, 124, 240, 0.25);
+    }
+</style>
+
+<div class="staff-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">💼 Staff Directory & Access</h1>
+            <p class="page-subtitle">Configure system profiles, register staff accounts, and authorize permissions</p>
+        </div>
+        <a href="/dashboard" class="btn-ghost">
+            <svg style="width:16px; height:16px; margin-right:4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Dashboard
+        </a>
+    </div>
+
+    <!-- Interactive Section Grid -->
+    <div class="admin-grid">
+        <!-- Panel 1: Create New Staff -->
+        <div class="glass-card">
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: #ffffff; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--primary);">👤</span> Add New Staff Account
+            </h3>
+            
+            <form method="POST" action="/add_staff">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div style="margin-bottom: 16px;">
+                    <label for="username">Staff Username</label>
+                    <input type="text" id="username" name="username" placeholder="e.g. staff2" required autocomplete="off"/>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label for="password">Initial Password</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required/>
+                </div>
+                
+                <div style="margin-bottom: 24px;">
+                    <label for="role">Assigned Authorization Role</label>
+                    <select id="role" name="role">
+                        <option value="staff" selected>Staff Member (Baseline Access)</option>
+                        <option value="admin">Administrator (Full Control)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn-gradient" style="width: 100%;">
+                    ➕ Register Account
+                </button>
+            </form>
+        </div>
+
+        <!-- Panel 2: Account Registry -->
+        <div class="glass-card">
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: #ffffff; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--primary);">📋</span> Active Accounts Registry
+            </h3>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>DB ID</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td style="color:var(--text-muted); font-family: monospace;">#{{ u.id }}</td>
+                            <td><strong style="color: #ffffff;">{{ u.username }}</strong></td>
+                            <td>
+                                {% if u.role == 'admin' %}
+                                <span class="badge-role admin">👑 Admin</span>
+                                {% else %}
+                                <span class="badge-role staff">💼 Staff</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align:right;">
+                                {% if u.username == session["user"] %}
+                                <button class="btn-ghost" style="padding: 6px 12px; font-size: 0.8rem; opacity: 0.5; cursor: not-allowed;" title="You cannot delete yourself" disabled>
+                                    🔒 Active Self
+                                </button>
+                                {% else %}
+                                <a href="/delete_staff/{{ u.id }}" onclick="return confirm('Permanently delete staff account &apos;{{ u.username }}&apos;?')" class="btn-ghost btn-danger" style="padding: 6px 12px; font-size: 0.8rem;">
+                                    🗑️ Delete
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,216 +1,183 @@
 {% extends "base.html" %}
-{% block title %}Suppliers Dashboard{% endblock %}
+{% block title %}Supplier Directory{% endblock %}
 
 {% block content %}
 <style>
-    .card {
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        margin-bottom: 24px;
-        animation: fadeIn 0.5s ease;
-    }
-    .grid-container {
+    .suppliers-split-grid {
         display: grid;
-        grid-template-columns: 320px 1fr;
-        gap: 24px;
+        grid-template-columns: 1fr;
+        gap: 30px;
+        align-items: start;
     }
-    label {
-        display: block;
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #888;
-        margin-bottom: 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+    @media(min-width: 992px) {
+        .suppliers-split-grid {
+            grid-template-columns: 320px 1fr;
+        }
     }
-    input, textarea {
+
+    textarea {
         width: 100%;
-        padding: 10px 12px;
-        border: 1px solid #eee;
-        border-radius: 10px;
-        font-size: 0.9rem;
-        outline: none;
-        transition: all 0.3s;
-        margin-bottom: 12px;
-    }
-    input:focus, textarea:focus {
-        border-color: #00c9a7;
-        box-shadow: 0 0 0 3px rgba(0,201,167,0.1);
-    }
-    .btn-action {
-        background: linear-gradient(135deg, #00c9a7, #007cf0);
-        color: white;
-        border: none;
-        padding: 12px;
-        border-radius: 10px;
-        font-weight: 700;
-        cursor: pointer;
-        width: 100%;
-        transition: all 0.3s;
-    }
-    .btn-action:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0,201,167,0.3);
-    }
-    .btn-cancel {
-        background: #f0f2f5;
-        color: #666;
-        border: none;
-        padding: 12px;
-        border-radius: 10px;
-        font-weight: 700;
-        cursor: pointer;
-        width: 100%;
-        text-align: center;
-        text-decoration: none;
-        display: block;
-        margin-top: 8px;
-        transition: all 0.3s;
-    }
-    .btn-cancel:hover {
-        background: #e4e6eb;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    th {
         padding: 12px 16px;
-        text-align: left;
-        font-size: 0.78rem;
-        color: #888;
+        border: 1px solid var(--border);
+        background: rgba(10, 15, 30, 0.5);
+        border-radius: var(--radius-md);
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: var(--text);
+        outline: none;
+        resize: vertical;
+        transition: all 0.25s;
+    }
+    textarea:focus {
+        border-color: var(--primary);
+        background: rgba(10, 15, 30, 0.8);
+        box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    /* Table custom dark styling */
+    .table-container {
+        overflow-x: auto;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        background: rgba(13, 20, 38, 0.4);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th {
+        background: rgba(22, 34, 57, 0.6);
+        padding: 14px 18px;
+        font-size: 0.75rem;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 2px solid #f0f0f0;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
     }
     td {
-        padding: 14px 16px;
-        border-bottom: 1px solid #f8f8f8;
-        font-size: 0.9rem;
+        padding: 16px 18px;
+        font-size: 0.92rem;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
     }
-    tr:hover td {
-        background: #f8fffd;
-    }
-    .action-links a {
-        text-decoration: none;
-        margin-right: 12px;
-        font-weight: 600;
-        font-size: 0.85rem;
-    }
-    .btn-del {
-        background: rgba(231,76,60,0.1);
-        color: #e74c3c;
-        border: none;
-        padding: 4px 8px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.75rem;
-        transition: all 0.2s;
-    }
-    .btn-del:hover {
-        background: #e74c3c;
-        color: white;
-    }
-    .btn-edit {
-        background: rgba(0,124,240,0.1);
-        color: #007cf0;
-        border: none;
-        padding: 4px 8px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.75rem;
-        text-decoration: none;
-        transition: all 0.2s;
-    }
-    .btn-edit:hover {
-        background: #007cf0;
-        color: white;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(15px); }
-        to { opacity: 1; transform: translateY(0); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { 
+        background-color: rgba(255, 255, 255, 0.015);
+        color: #ffffff;
     }
 </style>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-    <h2 style="color:#1a1a2e; font-weight:700;">🏢 Supplier Management</h2>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">🏢 Supplier Module</h1>
+        <p class="page-subtitle">Configure business partners, add supplier credentials, update contacts & query active directories</p>
+    </div>
 </div>
 
-<div class="grid-container">
-    <!-- Form Side -->
+<div class="suppliers-split-grid">
+    <!-- Form side panel -->
     <div>
-        <div class="card">
+        <div class="glass-card">
             {% if edit_supplier %}
-            <p style="color:#888; text-transform:uppercase; font-size:0.8rem; font-weight:600; margin-bottom:16px; letter-spacing:0.5px;">✏️ Edit Supplier</p>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--primary);">✏️</span> Edit Supplier
+            </h3>
             <form method="POST" action="/edit_supplier/{{ edit_supplier.id }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 
-                <label>Supplier Name</label>
-                <input type="text" name="name" value="{{ edit_supplier.name }}" placeholder="e.g. Apollo Pharma" required/>
+                <div style="margin-bottom: 16px;">
+                    <label>Supplier Name</label>
+                    <input type="text" name="name" value="{{ edit_supplier.name }}" placeholder="e.g. Apollo Pharma" required/>
+                </div>
                 
-                <label>Phone Number</label>
-                <input type="text" name="phone" value="{{ edit_supplier.phone or '' }}" placeholder="e.g. +91 9876543210"/>
+                <div style="margin-bottom: 16px;">
+                    <label>Phone Number</label>
+                    <input type="text" name="phone" value="{{ edit_supplier.phone or '' }}" placeholder="e.g. +91 9876543210"/>
+                </div>
                 
-                <label>Email Address</label>
-                <input type="email" name="email" value="{{ edit_supplier.email or '' }}" placeholder="e.g. contact@apollo.com"/>
+                <div style="margin-bottom: 16px;">
+                    <label>Email Address</label>
+                    <input type="email" name="email" value="{{ edit_supplier.email or '' }}" placeholder="e.g. contact@apollo.com"/>
+                </div>
                 
-                <label>Address</label>
-                <textarea name="address" rows="3" placeholder="e.g. Mumbai, India">{{ edit_supplier.address or '' }}</textarea>
+                <div style="margin-bottom: 20px;">
+                    <label>Physical Address</label>
+                    <textarea name="address" rows="3" placeholder="e.g. Mumbai, India">{{ edit_supplier.address or '' }}</textarea>
+                </div>
                 
-                <button type="submit" class="btn-action">💾 Save Changes</button>
-                <a href="/suppliers" class="btn-cancel">Cancel</a>
+                <button type="submit" class="btn-gradient" style="width: 100%;">💾 Save Changes</button>
+                <a href="/suppliers" class="btn-ghost" style="width: 100%; margin-top: 10px;">Cancel</a>
             </form>
             {% else %}
-            <p style="color:#888; text-transform:uppercase; font-size:0.8rem; font-weight:600; margin-bottom:16px; letter-spacing:0.5px;">➕ Add New Supplier</p>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--primary);">➕</span> Register Supplier
+            </h3>
             <form method="POST" action="/add_supplier">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 
-                <label>Supplier Name</label>
-                <input type="text" name="name" placeholder="e.g. Apollo Pharma" required/>
+                <div style="margin-bottom: 16px;">
+                    <label>Supplier Name</label>
+                    <input type="text" name="name" placeholder="e.g. Apollo Pharma" required/>
+                </div>
                 
-                <label>Phone Number</label>
-                <input type="text" name="phone" placeholder="e.g. +91 9876543210"/>
+                <div style="margin-bottom: 16px;">
+                    <label>Phone Number</label>
+                    <input type="text" name="phone" placeholder="e.g. +91 9876543210"/>
+                </div>
                 
-                <label>Email Address</label>
-                <input type="email" name="email" placeholder="e.g. contact@apollo.com"/>
+                <div style="margin-bottom: 16px;">
+                    <label>Email Address</label>
+                    <input type="email" name="email" placeholder="e.g. contact@apollo.com"/>
+                </div>
                 
-                <label>Address</label>
-                <textarea name="address" rows="3" placeholder="e.g. Mumbai, India"></textarea>
+                <div style="margin-bottom: 20px;">
+                    <label>Physical Address</label>
+                    <textarea name="address" rows="3" placeholder="e.g. Mumbai, India"></textarea>
+                </div>
                 
-                <button type="submit" class="btn-action">➕ Add Supplier</button>
+                <button type="submit" class="btn-gradient" style="width: 100%;">➕ Register Supplier</button>
             </form>
             {% endif %}
         </div>
     </div>
 
-    <!-- Table Side -->
+    <!-- Table directory panel -->
     <div>
-        <div class="card">
-            <p style="color:#888; text-transform:uppercase; font-size:0.8rem; font-weight:600; margin-bottom:16px; letter-spacing:0.5px;">🏢 Supplier Directory</p>
+        <div class="glass-card">
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #ffffff; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--primary);">🏢</span> Partner Directories
+            </h3>
+            
             {% if suppliers %}
-            <div style="overflow-x:auto;">
+            <div class="table-container">
                 <table>
                     <thead>
                         <tr>
                             <th>Supplier Name</th>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Address</th>
+                            <th>Phone Contact</th>
+                            <th>Email Address</th>
+                            <th>Physical Address</th>
                             <th style="text-align:right;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for s in suppliers %}
                         <tr>
-                            <td><strong>{{ s['name'] }}</strong></td>
-                            <td style="color:#666;">{{ s['phone'] or '—' }}</td>
-                            <td><a href="mailto:{{ s['email'] }}" style="color:#007cf0; text-decoration:none;">{{ s['email'] or '—' }}</a></td>
-                            <td style="color:#888; font-size:0.85rem;">{{ s['address'] or '—' }}</td>
-                            <td style="text-align:right;" class="action-links">
-                                <a href="/suppliers?edit={{ s['id'] }}" class="btn-edit">✏️ Edit</a>
-                                <a href="/delete_supplier/{{ s['id'] }}" class="btn-del" onclick="return confirm('Are you sure you want to delete supplier {{ s.name }}?')">🗑️</a>
+                            <td style="color:#ffffff; font-weight:700;">🏢 {{ s['name'] }}</td>
+                            <td style="font-family: monospace; font-size: 0.85rem;">{{ s['phone'] or '—' }}</td>
+                            <td>
+                                {% if s['email'] %}
+                                <a href="mailto:{{ s['email'] }}" style="color:var(--secondary); text-decoration:none; font-weight: 600;">{{ s['email'] }}</a>
+                                {% else %}
+                                <span style="color: var(--text-muted);">—</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:0.85rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="{{ s['address'] or '' }}">{{ s['address'] or '—' }}</td>
+                            <td style="text-align:right;">
+                                <div style="display:inline-flex; gap:6px;">
+                                    <a href="/suppliers?edit={{ s['id'] }}" class="btn-ghost" style="padding: 5px 10px; font-size: 0.78rem; border-color: rgba(0, 124, 240, 0.3); color: #93c5fd;">✏️ Edit</a>
+                                    <a href="/delete_supplier/{{ s['id'] }}" class="btn-ghost btn-danger" style="padding: 5px 8px; font-size: 0.78rem;" onclick="return confirm('Confirm supplier deletion: {{ s.name }}?')">🗑️</a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -218,7 +185,10 @@
                 </table>
             </div>
             {% else %}
-            <p style="text-align:center; color:#888; padding:40px 0;">No suppliers added yet. Fill in the form on the left to add your first supplier!</p>
+            <div style="text-align:center; padding:50px 20px; color: var(--text-secondary);">
+                <div style="font-size: 2.2rem; margin-bottom: 12px; opacity: 0.5;">🏢</div>
+                <p>No supplier registries compiled. Submit details via the left hand card to add partners.</p>
+            </div>
             {% endif %}
         </div>
     </div>

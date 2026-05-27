@@ -1,57 +1,77 @@
 {% extends "base.html" %}
-{% block title %}Billing{% endblock %}
+{% block title %}Billing Counter{% endblock %}
 
 {% block content %}
 <style>
-    .card {
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        margin-bottom: 24px;
-        animation: fadeIn 0.5s ease;
+    .billing-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 30px;
+        align-items: start;
     }
-    input, select {
+    @media(min-width: 992px) {
+        .billing-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .med-info-box {
+        background: rgba(0, 201, 167, 0.05);
+        border: 1px solid rgba(0, 201, 167, 0.25);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        margin-top: 20px;
+        display: none;
+        animation: fadeIn 0.4s ease;
+    }
+    
+    .search-results-dropdown {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: rgba(13, 20, 38, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        max-height: 250px;
+        overflow-y: auto;
+        position: absolute;
         width: 100%;
-        padding: 12px;
-        border: 1px solid #eee;
-        border-radius: 10px;
-        font-size: 0.95rem;
-        transition: all 0.3s;
-        outline: none;
-        margin-bottom: 12px;
+        z-index: 100;
+        box-shadow: var(--shadow-lg);
+        margin-top: 6px;
     }
-    input:focus, select:focus {
-        border-color: #00c9a7;
-        box-shadow: 0 0 0 3px rgba(0,201,167,0.1);
-    }
-    .btn-action {
-        padding: 12px 24px;
-        border: none;
-        border-radius: 10px;
+    
+    .search-result-row {
+        padding: 12px 18px;
         cursor: pointer;
-        font-weight: 700;
-        font-size: 0.95rem;
-        transition: all 0.3s;
-        display: inline-block;
-        text-decoration: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: all 0.2s ease;
     }
-    .btn-green {
-        background: linear-gradient(135deg, #00c9a7, #007cf0);
-        color: white;
+    .search-result-row:hover {
+        background: rgba(0, 201, 167, 0.1);
+        color: var(--primary);
     }
-    .btn-green:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0,201,167,0.3);
+    .search-result-row:last-child { border-bottom: none; }
+    
+    .search-wrap-relative {
+        position: relative;
+        margin-bottom: 16px;
     }
-    .btn-red {
-        background: rgba(231,76,60,0.1);
-        color: #e74c3c;
+    
+    .grand-total-panel {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--primary);
+        text-align: right;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        margin-bottom: 20px;
     }
-    .btn-red:hover {
-        background: #e74c3c;
-        color: white;
-    }
+
     table {
         width: 100%;
         border-collapse: collapse;
@@ -59,178 +79,229 @@
     th {
         padding: 12px;
         text-align: left;
-        font-size: 0.8rem;
-        color: #888;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-bottom: 2px solid #f0f0f0;
+        border-bottom: 2px solid var(--border);
     }
     td {
-        padding: 12px;
-        border-bottom: 1px solid #f8f8f8;
-        font-size: 0.9rem;
+        padding: 14px 12px;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.92rem;
+        color: var(--text-secondary);
     }
     tr:hover td {
-        background: #f8fffd;
+        background: rgba(255, 255, 255, 0.01);
     }
-    .med-info {
-        background: #f0fff8;
-        border: 1px solid #00c9a7;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 16px;
-        display: none;
-        animation: fadeIn 0.4s ease;
+
+    .med-img-preview {
+        width: 70px;
+        height: 70px;
+        border-radius: var(--radius-sm);
+        object-fit: contain;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.03);
     }
-    .search-results {
-        border: 1px solid #eee;
-        border-radius: 10px;
-        background: white;
-        max-height: 220px;
-        overflow-y: auto;
-        position: absolute;
-        width: 100%;
-        z-index: 100;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-    }
-    .search-item {
-        padding: 12px 16px;
-        cursor: pointer;
-        border-bottom: 1px solid #fcfcfc;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        transition: all 0.2s;
-    }
-    .search-item:hover {
-        background: #f0fff8;
-        color: #00c9a7;
-    }
-    .search-wrap {
-        position: relative;
-        margin-bottom: 16px;
-    }
-    .grand-total {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #00c9a7;
-        text-align: right;
-        padding: 16px 12px;
-        border-top: 2px solid #f8f8f8;
-    }
+
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(15px); }
+        from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
 </style>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-    <h2 style="color:#1a1a2e; font-weight:700;">🛒 Billing Counter</h2>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">🛒 Billing Desk</h1>
+        <p class="page-subtitle">Configure orders, query medicine stocks, compile shopping cart logs & issue sales slips</p>
+    </div>
 </div>
 
-<!-- SEARCH & ADD TO CART -->
-<div class="card">
-    <p style="color:#888; text-transform:uppercase; font-size:0.8rem; font-weight:600; margin-bottom:16px; letter-spacing:0.5px;">🔎 Search & Add Medicine</p>
-    <div class="search-wrap">
-        <input type="text" id="searchBox" placeholder="Type medicine name to search..." autocomplete="off" oninput="searchMed()"/>
-        <div class="search-results" id="searchResults" style="display:none;"></div>
-    </div>
-
-    <!-- Selected Medicine Details Card -->
-    <div class="med-info" id="medInfo">
-        <div style="display:flex; gap:16px; align-items:start;">
-            <img id="medInfoImg" src="" style="width:80px; height:80px; border-radius:8px; object-fit:contain; border:1px solid #eee; background:#fff; display:none;" alt="Preview"/>
-            <div>
-                <h4 id="medName" style="color:#1a1a2e; font-weight:700; margin-bottom:4px;"></h4>
-                <p style="font-size:0.9rem; color:#666; margin-bottom:8px;">
-                    Price: <strong>Rs.<span id="medPrice"></span></strong> | Stock Left: <span id="medStock" style="font-weight:600;"></span>
-                </p>
-                <p style="font-size:0.85rem; color:#e67e22; margin-bottom:4px;">Usage: <span id="medUsage" style="font-weight:600;"></span></p>
-                <p style="font-size:0.85rem; color:#e74c3c;">Restrictions: <span id="medRestrictions" style="font-weight:600;"></span></p>
-            </div>
+<div class="billing-grid">
+    <!-- Left Hand: Search & Cart Add -->
+    <div class="glass-card">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: #ffffff; margin-bottom: 18px; display: flex; align-items: center; gap: 8px;">
+            <span style="color: var(--primary);">🔎</span> Look Up Active Batches
+        </h3>
+        
+        <div class="search-wrap-relative">
+            <input type="text" id="searchBox" placeholder="Type name or batch index..." autocomplete="off" oninput="searchMed()"/>
+            <div class="search-results-dropdown" id="searchResults" style="display:none;"></div>
         </div>
 
-        <form method="POST" action="/add_to_cart" id="cartForm" style="margin-top:16px; display:flex; gap:12px; align-items:center;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="hidden" name="medicine_id" id="selectedMedId"/>
-            <div style="width:160px; margin-bottom:0;">
-                <input type="number" name="quantity" id="qtyInput" placeholder="Qty" min="1" style="display:none; margin-bottom:0;" required/>
+        <!-- Selected Medicine Card Profile -->
+        <div class="med-info-box" id="medInfo">
+            <div style="display:flex; gap:20px; align-items:start; flex-wrap: wrap;">
+                <img id="medInfoImg" src="" class="med-img-preview" style="display:none;" alt="Preview"/>
+                <div style="flex: 1; min-width: 200px;">
+                    <h4 id="medName" style="color:#ffffff; font-weight:800; font-size: 1.2rem; margin-bottom:6px;"></h4>
+                    <div style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:12px; display:flex; gap:16px;">
+                        <span>Price: <strong style="color: var(--primary);">Rs.<span id="medPrice"></span></strong></span>
+                        <span>Stock: <strong id="medStock" style="color: #ffffff;"></strong> items</span>
+                    </div>
+                    <div style="font-size:0.85rem; margin-bottom:6px; display: flex; align-items: center; gap: 6px;">
+                        <span style="color: var(--warning); font-weight: 700;">Usage:</span>
+                        <span id="medUsage" style="color: var(--text-secondary);"></span>
+                    </div>
+                    <div style="font-size:0.85rem; display: flex; align-items: center; gap: 6px;">
+                        <span style="color: var(--danger); font-weight: 700;">Alert Restrictions:</span>
+                        <span id="medRestrictions" style="color: var(--text-secondary);"></span>
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn-action btn-green" id="addBtn" style="display:none; padding:11px 24px;">➕ Add to Cart</button>
-        </form>
-    </div>
-</div>
 
-<!-- SHOPPING CART -->
-<div class="card">
-    <p style="color:#888; text-transform:uppercase; font-size:0.8rem; font-weight:600; margin-bottom:16px; letter-spacing:0.5px;">🛒 Checkout Cart</p>
-    {% if cart %}
-    <div style="overflow-x:auto;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Medicine</th>
-                    <th>Qty</th>
-                    <th>Price</th>
-                    <th style="text-align:right;">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in cart %}
-                <tr>
-                    <td><strong>{{ item['name'] }}</strong></td>
-                    <td><span style="font-weight:600; background:#f0f2f5; padding:4px 8px; border-radius:6px;">{{ item['qty'] }}</span></td>
-                    <td style="color:#666;">Rs.{{ item['price'] }}</td>
-                    <td style="color:#00c9a7; font-weight:600; text-align:right;">Rs.{{ item['total'] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <!-- Secured POST Add Cart Form -->
+            <form method="POST" action="/add_to_cart" id="cartForm" style="margin-top:20px; display:flex; gap:14px; align-items:center;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="medicine_id" id="selectedMedId"/>
+                <div style="width:130px;">
+                    <input type="number" name="quantity" id="qtyInput" placeholder="Qty" min="1" style="display:none;" required/>
+                </div>
+                <button type="submit" class="btn-gradient" id="addBtn" style="display:none; flex: 1;">➕ Compile Cart</button>
+            </form>
+        </div>
     </div>
-    <div class="grand-total">Grand Total: Rs.{{ cart_total }}</div>
-    <div style="display:flex; gap:12px; justify-content:flex-end;">
-        <a href="/clear_cart" class="btn-action btn-red">🗑️ Clear Cart</a>
-        <form method="POST" action="/checkout" style="margin:0;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <button type="submit" class="btn-action btn-green">✅ Checkout & Print Bill</button>
-        </form>
+
+    <!-- Right Hand: Checkout list -->
+    <div class="glass-card">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: #ffffff; margin-bottom: 18px; display: flex; align-items: center; gap: 8px;">
+            <span style="color: var(--primary);">🛒</span> Active Order Slip
+        </h3>
+        
+        {% if cart %}
+        <div style="overflow-x:auto; margin-bottom: 20px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Batch Item</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th style="text-align:right;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart %}
+                    <tr>
+                        <td style="font-weight:700; color: #ffffff;">{{ item['name'] }}</td>
+                        <td>
+                            <span style="font-weight:700; background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:6px; border: 1px solid var(--border);">
+                                {{ item['qty'] }}
+                            </span>
+                        </td>
+                        <td style="color:var(--text-secondary);">Rs.{{ item['price'] }}</td>
+                        <td style="color:var(--primary); font-weight:700; text-align:right;">Rs.{{ item['total'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="grand-total-panel">Total Order: Rs.{{ cart_total }}</div>
+        
+        <div style="display:flex; gap:12px; justify-content:flex-end; flex-wrap: wrap;">
+            <a href="/clear_cart" class="btn-ghost btn-danger">🗑️ Void Slip</a>
+            <form method="POST" action="/checkout" style="margin:0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn-gradient">✅ Invoice & Compile Slip</button>
+            </form>
+        </div>
+        {% else %}
+        <div style="text-align:center; padding:50px 20px; color: var(--text-secondary);">
+            <div style="font-size: 2.2rem; margin-bottom: 12px; opacity: 0.5;">🛒</div>
+            <p>Slip registry is empty. Type a medicine name in the search bar to query your first item!</p>
+        </div>
+        {% endif %}
     </div>
-    {% else %}
-    <p style="color:#888; text-align:center; padding:40px 0;">Cart is empty. Type a medicine name in the search bar above to start selling!</p>
-    {% endif %}
 </div>
 
 <div id="medicines-data" data-medicines="{{ medicines | tojson | forceescape }}" style="display:none;"></div>
 
-<!-- Local Medicines Data Search -->
+<!-- Secured Frontend Search Logic - Strictly Anti-XSS and Safe-DOM -->
 <script>
     const medicines = JSON.parse(document.getElementById("medicines-data").getAttribute("data-medicines"));
 
     function searchMed() {
         const query = document.getElementById("searchBox").value.toLowerCase();
         const resultsDiv = document.getElementById("searchResults");
-        if (query.length < 1) { resultsDiv.style.display = "none"; return; }
+        
+        // Safe clear content using textContent to prevent DOM breakouts
+        resultsDiv.textContent = '';
+        
+        if (query.length < 1) { 
+            resultsDiv.style.display = "none"; 
+            return; 
+        }
+        
         const filtered = medicines.filter(m => m.name.toLowerCase().includes(query));
-        if (filtered.length === 0) { resultsDiv.style.display = "none"; return; }
-        resultsDiv.innerHTML = filtered.map(m => {
-            const imgHtml = m.image 
-                ? `<img src="/${m.image}" style="width:30px; height:30px; border-radius:4px; object-fit:contain; background:#fff; border:1px solid #eee;"/>`
-                : `<div style="width:30px; height:30px; border-radius:4px; background:#eee; display:flex; align-items:center; justify-content:center; font-size:0.8rem; color:#aaa;">💊</div>`;
-            return `<div class="search-item" onclick="selectMed(${m.id})">
-                ${imgHtml}
-                <div>
-                    <strong>${m.name}</strong> — Rs.${m.price} <span style="font-size:0.78rem; color:#888;">(Stock: ${m.quantity})</span>
-                </div>
-            </div>`;
-        }).join("");
+        if (filtered.length === 0) { 
+            resultsDiv.style.display = "none"; 
+            return; 
+        }
+        
+        // Strict Safe-DOM element construction (Strict Anti-XSS compliance)
+        filtered.forEach(m => {
+            const row = document.createElement("div");
+            row.className = "search-result-row";
+            row.addEventListener("click", () => selectMed(m.id));
+            
+            // Image Box
+            const imgBox = document.createElement("div");
+            if (m.image) {
+                const img = document.createElement("img");
+                img.src = "/" + m.image;
+                img.style.width = "32px";
+                img.style.height = "32px";
+                img.style.borderRadius = "6px";
+                img.style.objectFit = "contain";
+                img.style.background = "#fff";
+                img.style.border = "1px solid var(--border)";
+                imgBox.appendChild(img);
+            } else {
+                const dummy = document.createElement("div");
+                dummy.style.width = "32px";
+                dummy.style.height = "32px";
+                dummy.style.borderRadius = "6px";
+                dummy.style.background = "rgba(255,255,255,0.05)";
+                dummy.style.display = "flex";
+                dummy.style.alignItems = "center";
+                dummy.style.justifyContent = "center";
+                dummy.style.fontSize = "0.8rem";
+                dummy.style.color = "var(--text-muted)";
+                dummy.textContent = "💊";
+                imgBox.appendChild(dummy);
+            }
+            row.appendChild(imgBox);
+            
+            // Text Details Block
+            const details = document.createElement("div");
+            
+            const medTitle = document.createElement("strong");
+            medTitle.style.color = "#ffffff";
+            medTitle.style.marginRight = "8px";
+            medTitle.textContent = m.name;
+            details.appendChild(medTitle);
+            
+            const medMeta = document.createElement("span");
+            medMeta.style.fontSize = "0.8rem";
+            medMeta.style.color = "var(--text-secondary)";
+            medMeta.textContent = `— Rs.${m.price} (Stock: ${m.quantity})`;
+            details.appendChild(medMeta);
+            
+            row.appendChild(details);
+            resultsDiv.appendChild(row);
+        });
+        
         resultsDiv.style.display = "block";
     }
 
     function selectMed(id) {
         const med = medicines.find(m => m.id === id);
+        
         document.getElementById("searchBox").value = med.name;
         document.getElementById("searchResults").style.display = "none";
         document.getElementById("selectedMedId").value = med.id;
+        
+        // Strict Safe-DOM content replacement using textContent
         document.getElementById("medName").textContent = med.name;
         document.getElementById("medPrice").textContent = med.price;
         document.getElementById("medStock").textContent = med.quantity;
@@ -248,6 +319,9 @@
         document.getElementById("medInfo").style.display = "block";
         document.getElementById("qtyInput").style.display = "block";
         document.getElementById("addBtn").style.display = "block";
+        
+        // Set max quantity safety limit
+        document.getElementById("qtyInput").max = med.quantity;
     }
 </script>
 {% endblock %}

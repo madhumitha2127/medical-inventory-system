@@ -21,3 +21,4 @@ inventory_export.csv
 .idea/
 .DS_Store
 Thumbs.db
+.agents/
