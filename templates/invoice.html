@@ -259,14 +259,24 @@
     </div>
 
     <!-- Metadata Grid -->
-    <div class="meta-grid">
+    <div class="meta-grid" style="grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 24px; gap: 16px;">
         <div>
-            <div class="meta-label">Billed Date & Time</div>
-            <div class="meta-value">{{ data.date }}</div>
+            <div class="meta-label">👤 Patient Profile</div>
+            <div class="meta-value" style="font-size: 1.02rem; color: #ffffff;">{{ data.patient_name }}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:4px;">Age/Gender: {{ data.patient_age }} Yrs / {{ data.patient_gender }}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Phone: {{ data.patient_phone }}</div>
+        </div>
+        <div>
+            <div class="meta-label">🩺 Medical Details</div>
+            <div class="meta-value" style="font-size: 1.02rem; color: #ffffff;">Dr. {{ data.doctor_name or 'Self / Generic' }}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:4px;">Prescription ID: {{ data.prescription_id or '—' }}</div>
         </div>
         <div style="text-align:right;">
-            <div class="meta-label">Billed By (Seller)</div>
-            <div class="meta-value">{{ data.seller | upper }}</div>
+            <div class="meta-label">💳 Transaction Info</div>
+            <div class="meta-value" style="font-size: 1.02rem; color: var(--primary);">{{ data.invoice_no }}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:4px;">Payment: {{ data.payment_method }}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Clerk: {{ data.seller | upper }}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">{{ data.date }}</div>
         </div>
     </div>
 
@@ -298,10 +308,26 @@
         </table>
     </div>
 
+    <!-- Pricing Breakout Section -->
+    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; font-size: 0.9rem;">
+        <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-secondary);">Subtotal:</span>
+            <span style="color: #ffffff; font-weight: 700;">Rs.{{ "%.2f" | format(data.subtotal) }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; color: var(--warning);">
+            <span>Discount ({{ data.discount_rate }}%):</span>
+            <span style="font-weight: 700;">-Rs.{{ "%.2f" | format(data.discount_amount) }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; color: var(--text-secondary);">
+            <span>GST Tax (CGST 6% + SGST 6%):</span>
+            <span style="color: #ffffff; font-weight: 700;">+Rs.{{ "%.2f" | format(data.tax_amount) }}</span>
+        </div>
+    </div>
+
     <!-- Grand Total Row -->
     <div class="grand-total-row">
         <div style="font-size:1.05rem; font-weight:700; color:var(--primary);">GRAND TOTAL:</div>
-        <div style="font-size:1.6rem; font-weight:800; color:var(--primary);">Rs.{{ data.total }}</div>
+        <div style="font-size:1.6rem; font-weight:800; color:var(--primary);">Rs.{{ "%.2f" | format(data.total) }}</div>
     </div>
 
     <!-- QR Section for Mobile Tracking -->
@@ -309,9 +335,9 @@
     <div class="qr-section">
         <img src="data:image/png;base64,{{ data.qr }}" width="110" height="110" alt="QR Code"/>
         <div style="flex: 1; min-width: 200px;">
-            <h6 style="font-weight:700; margin-bottom:6px; color:#ffffff;">📱 Scan QR for Smart Instructions</h6>
+            <h6 style="font-weight:700; margin-bottom:6px; color:#ffffff;">📱 QR Code Medicine Instructions</h6>
             <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.45;">
-                Scan this QR code using any mobile scanner to instantly view detailed dosage recommendations, strict restrictions, and access additional medicine lookup details on the go!
+                This QR code contains detailed dosage recommendations, strict restrictions, and complete digital lookup details for all items.
             </p>
         </div>
     </div>
@@ -325,7 +351,7 @@
         </div>
         <div style="display:flex; gap:8px;">
             <button onclick="window.print()" class="btn-action btn-print">🖨️ Print Receipt</button>
-            <a href="/download_invoice" class="btn-action btn-pdf">📄 Download PDF</a>
+            <a href="/download_invoice?id={{ data.id }}" class="btn-action btn-pdf">📄 Download PDF</a>
         </div>
     </div>
 </div>

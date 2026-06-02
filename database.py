@@ -23,9 +23,11 @@ def init_db():
         name TEXT,
         batch_no TEXT,
         quantity INTEGER,
+        buying_price REAL,
         price REAL,
         expiry_date TEXT,
         dosage TEXT,
+        dosage_form TEXT,
         restrictions TEXT,
         side_effects TEXT,
         supplier TEXT,
@@ -43,6 +45,7 @@ def init_db():
 
         medicine_name TEXT,
         quantity_sold INTEGER,
+        buying_price REAL,
         total_price REAL,
         sold_by TEXT,
         sold_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -75,6 +78,28 @@ def init_db():
     )
     """)
 
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS invoices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_no TEXT UNIQUE,
+        patient_name TEXT,
+        patient_age INTEGER,
+        patient_gender TEXT,
+        patient_phone TEXT,
+        doctor_name TEXT,
+        prescription_id TEXT,
+        payment_method TEXT,
+        discount_rate REAL,
+        discount_amount REAL,
+        tax_rate REAL,
+        tax_amount REAL,
+        subtotal REAL,
+        grand_total REAL,
+        sold_by TEXT,
+        sold_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     # Seed default credentials if table is empty
     count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     if count == 0:
@@ -94,6 +119,30 @@ def init_db():
             'staff'
         )
         """)
+
+    # Dynamic migrations for existing databases
+    # 1. Migrate medicines table
+    cursor = conn.execute("PRAGMA table_info(medicines)")
+    columns = [row["name"] for row in cursor.fetchall()]
+    if "buying_price" not in columns:
+        conn.execute("ALTER TABLE medicines ADD COLUMN buying_price REAL")
+        conn.execute("UPDATE medicines SET buying_price = ROUND(price * 0.7, 2)")
+    if "dosage_form" not in columns:
+        conn.execute("ALTER TABLE medicines ADD COLUMN dosage_form TEXT")
+        conn.execute("UPDATE medicines SET dosage_form = 'Tablet'")
+
+    # 2. Migrate sales table
+    cursor = conn.execute("PRAGMA table_info(sales)")
+    columns = [row["name"] for row in cursor.fetchall()]
+    if "buying_price" not in columns:
+        conn.execute("ALTER TABLE sales ADD COLUMN buying_price REAL")
+        conn.execute("""
+            UPDATE sales 
+            SET buying_price = ROUND((total_price / quantity_sold) * 0.7, 2)
+            WHERE quantity_sold > 0
+        """)
+    if "invoice_id" not in columns:
+        conn.execute("ALTER TABLE sales ADD COLUMN invoice_id INTEGER")
 
     conn.commit()
     conn.close()

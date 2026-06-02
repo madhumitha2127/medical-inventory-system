@@ -203,7 +203,10 @@
         <img src="data:image/png;base64,{{ qr }}" width="220" height="220" alt="QR Link"/>
     </div>
     
-    <button id="printBtn" class="btn-print">🖨 Print QR Label</button>
+    <div style="display:flex; gap:12px; margin-top:20px; align-items:center;">
+        <button id="printBtn" class="btn-print" style="flex:1;">🖨 Print Label</button>
+        <a href="/download_medicine_qr/{{ med['id'] }}" class="btn-print" style="flex:1; background:linear-gradient(135deg, var(--secondary) 0%, #0056b3 100%); box-shadow: 0 8px 20px rgba(0, 124, 240, 0.25); text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px;">📄 PDF Sticker</a>
+    </div>
     <a href="/inventory" class="btn-back">← Return to Inventory</a>
 </div>
 

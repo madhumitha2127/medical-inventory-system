@@ -22,7 +22,7 @@
         margin-bottom: 30px;
     }
     @media(min-width: 576px) { .analytics-grid-4 { grid-template-columns: repeat(2, 1fr); } }
-    @media(min-width: 992px) { .analytics-grid-4 { grid-template-columns: repeat(4, 1fr); } }
+    @media(min-width: 992px) { .analytics-grid-4 { grid-template-columns: repeat(5, 1fr); } }
 
     .chart-panel-card {
         background: rgba(18, 26, 45, 0.55);
@@ -135,6 +135,12 @@
         <div style="font-size: 2rem; margin-bottom: 8px;">💰</div>
         <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary); letter-spacing: -1px;">Rs.{{ total_revenue }}</div>
         <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Total Turnover</div>
+    </div>
+    
+    <div class="chart-panel-card" style="text-align: center;">
+        <div style="font-size: 2rem; margin-bottom: 8px;">📈</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #10b981; letter-spacing: -1px;">Rs.{{ total_profit }}</div>
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Net Profit</div>
     </div>
     
     <div class="chart-panel-card" style="text-align: center;">
@@ -251,7 +257,7 @@
 <!-- Line Flow Chart Panel -->
 <div class="chart-panel-card" style="margin-bottom: 30px;">
     <h3 style="font-size: 1rem; font-weight: 700; color: #ffffff; margin-bottom: 18px; display: flex; align-items: center; gap: 6px;">
-        <span style="color: var(--accent);">📈</span> Business Revenue Trend
+        <span style="color: var(--accent);">📈</span> Business Revenue & Profit Trend
     </h3>
     <div style="position: relative; height: 280px; width: 100%;">
         <canvas id="lineChart"></canvas>
@@ -269,6 +275,7 @@
      data-top-revenue="{{ top_revenue | forceescape }}"
      data-daily-labels="{{ daily_labels | forceescape }}"
      data-daily-values="{{ daily_values | forceescape }}"
+     data-daily-profits="{{ daily_profits | forceescape }}"
      style="display:none;"></div>
 
 <!-- Clean, Pure Anti-XSS safe script processing -->
@@ -280,6 +287,7 @@
     const topRevenue = JSON.parse(analyticsDataEl.getAttribute("data-top-revenue"));
     const dailyLabels = JSON.parse(analyticsDataEl.getAttribute("data-daily-labels"));
     const dailyValues = JSON.parse(analyticsDataEl.getAttribute("data-daily-values"));
+    const dailyProfits = JSON.parse(analyticsDataEl.getAttribute("data-daily-profits"));
 
     const selectedMeds = [];
     let searchChartInstance = null;
@@ -560,24 +568,41 @@
         type: "line",
         data: { 
             labels: dailyLabels, 
-            datasets: [{ 
-                label: "Revenue (Rs.)", 
-                data: dailyValues, 
-                borderColor: "#00c9a7", 
-                backgroundColor: "rgba(0, 201, 167, 0.08)", 
-                borderWidth: 3.5, 
-                fill: true, 
-                tension: 0.35, 
-                pointBackgroundColor: "#00c9a7", 
-                pointHoverRadius: 7,
-                pointRadius: 4 
-            }] 
+            datasets: [
+                { 
+                    label: "Revenue (Rs.)", 
+                    data: dailyValues, 
+                    borderColor: "#00c9a7", 
+                    backgroundColor: "rgba(0, 201, 167, 0.04)", 
+                    borderWidth: 3.5, 
+                    fill: true, 
+                    tension: 0.35, 
+                    pointBackgroundColor: "#00c9a7", 
+                    pointHoverRadius: 7,
+                    pointRadius: 4 
+                },
+                { 
+                    label: "Net Profit (Rs.)", 
+                    data: dailyProfits, 
+                    borderColor: "#8b5cf6", 
+                    backgroundColor: "rgba(139, 92, 246, 0.04)", 
+                    borderWidth: 3.5, 
+                    fill: true, 
+                    tension: 0.35, 
+                    pointBackgroundColor: "#8b5cf6", 
+                    pointHoverRadius: 7,
+                    pointRadius: 4 
+                }
+            ] 
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false,
             plugins: { 
-                legend: { display: false } 
+                legend: { 
+                    display: true,
+                    labels: { color: "#9ca3af", font: { family: "Plus Jakarta Sans", weight: 600 } }
+                } 
             }, 
             scales: { 
                 y: { 

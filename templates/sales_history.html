@@ -116,8 +116,8 @@
     <form method="GET" action="/sales_history">
         <div class="filter-grid-layout">
             <div>
-                <label>Medicine Query</label>
-                <input type="text" name="search" value="{{ search or '' }}" placeholder="Search by name..."/>
+                <label>Query Search</label>
+                <input type="text" name="search" value="{{ search or '' }}" placeholder="Med, patient, invoice..."/>
             </div>
             
             <div>
@@ -177,9 +177,12 @@
             <thead>
                 <tr>
                     <th>Slip ID</th>
+                    <th>Invoice No</th>
+                    <th>Patient Name</th>
                     <th>Medicine Description</th>
                     <th>Units Sold</th>
                     <th>Slip Total</th>
+                    <th>Payment</th>
                     <th>Responsible Clerk</th>
                     <th>Dispatched Date</th>
                 </tr>
@@ -188,6 +191,14 @@
                 {% for sale in sales %}
                 <tr>
                     <td style="color:var(--text-muted); font-family: monospace;">#SLIP-{{ sale['id'] }}</td>
+                    <td>
+                        {% if sale['invoice_id'] %}
+                        <a href="/invoice?id={{ sale['invoice_id'] }}" style="color:var(--secondary); font-weight:700; text-decoration:none; font-family: monospace;">{{ sale['invoice_no'] or '#INV-' ~ sale['invoice_id'] }}</a>
+                        {% else %}
+                        <span style="color:var(--text-muted); font-family: monospace;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="color:#ffffff; font-weight: 600;">{{ sale['patient_name'] or 'Walk-in' }}</td>
                     <td style="color:#ffffff; font-weight:700;">💊 {{ sale['medicine_name'] }}</td>
                     <td>
                         <span style="font-weight:700; background:rgba(0, 124, 240, 0.1); color: #93c5fd; padding:4px 10px; border-radius:6px; border: 1px solid rgba(0, 124, 240, 0.2);">
@@ -195,6 +206,11 @@
                         </span>
                     </td>
                     <td style="color:var(--primary); font-weight:700;">Rs.{{ sale['total_price'] }}</td>
+                    <td>
+                        <span style="background:rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">
+                            {{ sale['payment_method'] or 'Cash' }}
+                        </span>
+                    </td>
                     <td>
                         <span style="background: rgba(255, 255, 255, 0.04); color: var(--text-secondary); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.8rem; font-weight: 600;">
                             {{ sale['sold_by'] }}

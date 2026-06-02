@@ -118,48 +118,69 @@
 </div>
 
 <div class="billing-grid">
-    <!-- Left Hand: Search & Cart Add -->
-    <div class="glass-card">
-        <h3 style="font-size: 1.15rem; font-weight: 700; color: #ffffff; margin-bottom: 18px; display: flex; align-items: center; gap: 8px;">
-            <span style="color: var(--primary);">🔎</span> Look Up Active Batches
-        </h3>
+    <!-- Left Hand: Visual Medicine Catalog -->
+    <div class="glass-card" style="display: flex; flex-direction: column; max-height: 800px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px; margin: 0;">
+                <span>💊</span> Live Medicine Catalog
+            </h3>
+            <span style="background: rgba(0, 201, 167, 0.1); color: var(--primary); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">
+                {{ medicines | length }} Available
+            </span>
+        </div>
         
-        <div class="search-wrap-relative">
-            <input type="text" id="searchBox" placeholder="Type name or batch index..." autocomplete="off" oninput="searchMed()"/>
-            <div class="search-results-dropdown" id="searchResults" style="display:none;"></div>
+        <!-- Live Catalog Filter Input -->
+        <div style="position: relative; margin-bottom: 20px;">
+            <input type="text" id="catalogSearch" placeholder="Type to filter catalog in real-time..." oninput="filterCatalog()" style="padding-left: 45px; background: rgba(0,0,0,0.2);"/>
+            <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1rem;">🔍</span>
         </div>
 
-        <!-- Selected Medicine Card Profile -->
-        <div class="med-info-box" id="medInfo">
-            <div style="display:flex; gap:20px; align-items:start; flex-wrap: wrap;">
-                <img id="medInfoImg" src="" class="med-img-preview" style="display:none;" alt="Preview"/>
-                <div style="flex: 1; min-width: 200px;">
-                    <h4 id="medName" style="color:#ffffff; font-weight:800; font-size: 1.2rem; margin-bottom:6px;"></h4>
-                    <div style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:12px; display:flex; gap:16px;">
-                        <span>Price: <strong style="color: var(--primary);">Rs.<span id="medPrice"></span></strong></span>
-                        <span>Stock: <strong id="medStock" style="color: #ffffff;"></strong> items</span>
-                    </div>
-                    <div style="font-size:0.85rem; margin-bottom:6px; display: flex; align-items: center; gap: 6px;">
-                        <span style="color: var(--warning); font-weight: 700;">Usage:</span>
-                        <span id="medUsage" style="color: var(--text-secondary);"></span>
-                    </div>
-                    <div style="font-size:0.85rem; display: flex; align-items: center; gap: 6px;">
-                        <span style="color: var(--danger); font-weight: 700;">Alert Restrictions:</span>
-                        <span id="medRestrictions" style="color: var(--text-secondary);"></span>
-                    </div>
+        <!-- Scrollable Cards Grid Container -->
+        <div id="catalogGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; overflow-y: auto; flex: 1; padding-right: 6px; max-height: 620px;">
+            {% for m in medicines %}
+            <div class="catalog-card" data-name="{{ m.name | lower }}" data-batch="{{ m.batch_no | lower }}" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; display: flex; flex-direction: column; gap: 10px; transition: all 0.3s ease; position: relative;">
+                
+                <!-- Status stock level pill badge -->
+                <div style="position: absolute; top: 10px; right: 10px; z-index: 2;">
+                    {% if m.quantity < 5 %}
+                    <span style="font-size: 0.65rem; background: rgba(239, 68, 68, 0.15); color: var(--danger); padding: 2px 6px; border-radius: 4px; font-weight: 800; border: 1px solid rgba(239, 68, 68, 0.3);">LOW</span>
+                    {% else %}
+                    <span style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 2px 6px; border-radius: 4px; font-weight: 800; border: 1px solid rgba(16, 185, 129, 0.3);">OK</span>
+                    {% endif %}
+                </div>
+
+                <!-- Product Image -->
+                <div style="width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 10px;">
+                    {% if m.image %}
+                    <img src="/{{ m.image }}" style="width: 100%; height: 100%; object-fit: contain; background: #fff;" alt="{{ m.name }}"/>
+                    {% else %}
+                    <div style="font-size: 2.2rem; opacity: 0.5;">💊</div>
+                    {% endif %}
+                </div>
+
+                <!-- Product description -->
+                <div style="display: flex; flex-direction: column; flex: 1; min-height: 80px;">
+                    <strong style="color: #ffffff; font-size: 0.95rem; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ m.name }}">{{ m.name }}</strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace; margin-top: 4px;">Batch: {{ m.batch_no }}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Form: <span style="color: var(--primary); font-weight: 600;">{{ m.dosage_form }}</span></span>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Stock: <strong style="color:#fff;">{{ m.quantity }}</strong> units</span>
+                </div>
+
+                <!-- Price and action -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 4px;">
+                    <div style="font-size: 0.95rem; font-weight: 800; color: var(--primary);">Rs.{{ m.price }}</div>
+                    <button onclick="instantAdd(this.getAttribute('data-med-id'))" data-med-id="{{ m.id }}" class="btn-gradient" style="padding: 6px 12px; font-size: 0.8rem; height: 32px; border-radius: 6px; box-shadow: none;">➕ Add</button>
                 </div>
             </div>
-
-            <!-- Secured POST Add Cart Form -->
-            <form method="POST" action="/add_to_cart" id="cartForm" style="margin-top:20px; display:flex; gap:14px; align-items:center;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="medicine_id" id="selectedMedId"/>
-                <div style="width:130px;">
-                    <input type="number" name="quantity" id="qtyInput" placeholder="Qty" min="1" style="display:none;" required/>
-                </div>
-                <button type="submit" class="btn-gradient" id="addBtn" style="display:none; flex: 1;">➕ Compile Cart</button>
-            </form>
+            {% endfor %}
         </div>
+
+        <!-- Hidden Legacy Cart Form to maintain instantAdd compatibility -->
+        <form method="POST" action="/add_to_cart" id="cartForm" style="display:none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="medicine_id" id="selectedMedId"/>
+            <input type="number" name="quantity" id="qtyInput" value="1"/>
+        </form>
     </div>
 
     <!-- Right Hand: Checkout list -->
@@ -174,9 +195,10 @@
                 <thead>
                     <tr>
                         <th>Batch Item</th>
-                        <th>Qty</th>
+                        <th>Qty Controls</th>
                         <th>Rate</th>
-                        <th style="text-align:right;">Subtotal</th>
+                        <th>Subtotal</th>
+                        <th style="text-align:right;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -184,27 +206,123 @@
                     <tr>
                         <td style="font-weight:700; color: #ffffff;">{{ item['name'] }}</td>
                         <td>
-                            <span style="font-weight:700; background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:6px; border: 1px solid var(--border);">
-                                {{ item['qty'] }}
-                            </span>
+                            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.15); border: 1px solid var(--border); border-radius: 8px; padding: 2px;">
+                                <a href="/update_cart_qty/{{ item['id'] }}/dec" class="btn-ghost" style="padding: 2px 6px; font-size: 0.75rem; border: none; color: var(--text-secondary); min-width: auto; height: auto;">➖</a>
+                                <span style="font-weight:700; color: #ffffff; font-size: 0.85rem; padding: 0 4px; min-width: 20px; text-align: center;">
+                                    {{ item['qty'] }}
+                                </span>
+                                <a href="/update_cart_qty/{{ item['id'] }}/inc" class="btn-ghost" style="padding: 2px 6px; font-size: 0.75rem; border: none; color: var(--text-secondary); min-width: auto; height: auto;">➕</a>
+                            </div>
                         </td>
                         <td style="color:var(--text-secondary);">Rs.{{ item['price'] }}</td>
-                        <td style="color:var(--primary); font-weight:700; text-align:right;">Rs.{{ item['total'] }}</td>
+                        <td style="color:var(--primary); font-weight:700;">Rs.{{ item['total'] }}</td>
+                        <td style="text-align:right;">
+                            <a href="/remove_from_cart/{{ item['id'] }}" class="btn-ghost btn-danger" style="padding: 4px 8px; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.2); height: 26px; width: 26px; display: inline-flex; align-items: center; justify-content: center;">🗑️</a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         
-        <div class="grand-total-panel">Total Order: Rs.{{ cart_total }}</div>
+        <div class="grand-total-panel" style="display:none;">Total Order: Rs.{{ cart_total }}</div>
         
-        <div style="display:flex; gap:12px; justify-content:flex-end; flex-wrap: wrap;">
-            <a href="/clear_cart" class="btn-ghost btn-danger">🗑️ Void Slip</a>
-            <form method="POST" action="/checkout" style="margin:0;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <button type="submit" class="btn-gradient">✅ Invoice & Compile Slip</button>
-            </form>
-        </div>
+        <form method="POST" action="/checkout" style="margin:0; display: flex; flex-direction: column; gap: 20px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 10px;">
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <span>👤</span> Patient & Doctor Information
+                </h4>
+                <button type="button" onclick="autofillTestData()" class="btn-ghost" style="padding: 4px 8px; font-size: 0.75rem; border-color: rgba(0, 124, 240, 0.3); color: #93c5fd; transition: all 0.3s ease;">⚡ Quick Autofill</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 14px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Patient Name *</label>
+                        <input type="text" name="patient_name" placeholder="e.g. John Doe" required style="width:100%;"/>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Phone Number *</label>
+                        <input type="tel" name="patient_phone" placeholder="e.g. 9876543210" required style="width:100%;"/>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Age *</label>
+                        <input type="number" name="patient_age" placeholder="e.g. 35" min="1" max="120" required style="width:100%;"/>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Gender *</label>
+                        <select name="patient_gender" required style="width:100%; height: 42px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 12px; color:#fff;">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Doctor Name</label>
+                        <input type="text" name="doctor_name" placeholder="e.g. Dr. Smith" style="width:100%;"/>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Prescription ID</label>
+                        <input type="text" name="prescription_id" placeholder="e.g. RX-9921" style="width:100%;"/>
+                    </div>
+                </div>
+            </div>
+
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: #ffffff; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                <span>💳</span> Payment & Discount Details
+            </h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Payment Method *</label>
+                    <select name="payment_method" required style="width:100%; height: 42px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 12px; color:#fff;">
+                        <option value="Cash">Cash</option>
+                        <option value="UPI">UPI / Digital</option>
+                        <option value="Card">Credit/Debit Card</option>
+                        <option value="Insurance">Insurance Claims</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Discount Offer</label>
+                    <select name="discount_rate" id="discountSelect" onchange="calculateSummary()" style="width:100%; height: 42px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 12px; color:#fff;">
+                        <option value="0">No Discount (0%)</option>
+                        <option value="5">Staff Discount (5%)</option>
+                        <option value="10">Senior Citizen (10%)</option>
+                        <option value="15">Insurance Coverage (15%)</option>
+                        <option value="20">Special Promo (20%)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Real-time calculation summary -->
+            <div style="background: rgba(255, 255, 255, 0.02); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; margin-top: 10px; font-size: 0.9rem;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-secondary);">Cart Subtotal:</span>
+                    <span style="color: #ffffff; font-weight: 700;">Rs.<span id="calcSubtotal">{{ cart_total }}</span></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; color: var(--warning);">
+                    <span>Discount:</span>
+                    <span style="font-weight: 700;">-Rs.<span id="calcDiscount">0.00</span></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; color: var(--text-secondary);">
+                    <span>GST Tax (12% total - 6% CGST + 6% SGST):</span>
+                    <span style="color: #ffffff; font-weight: 700;">+Rs.<span id="calcGST">0.00</span></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.4rem; color: var(--primary); border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 4px;">
+                    <span>Grand Total:</span>
+                    <span>Rs.<span id="calcGrandTotal">0.00</span></span>
+                </div>
+            </div>
+            
+            <div style="display:flex; gap:12px; justify-content:flex-end; flex-wrap: wrap; margin-top: 10px;">
+                <a href="/clear_cart" class="btn-ghost btn-danger" style="display: inline-flex; align-items: center; padding: 12px 20px;">🗑️ Void Slip</a>
+                <button type="submit" class="btn-gradient" style="padding: 12px 24px;">✅ Complete Billing & Print Invoice</button>
+            </div>
+        </form>
         {% else %}
         <div style="text-align:center; padding:50px 20px; color: var(--text-secondary);">
             <div style="font-size: 2.2rem; margin-bottom: 12px; opacity: 0.5;">🛒</div>
@@ -213,115 +331,71 @@
         {% endif %}
     </div>
 </div>
-
 <div id="medicines-data" data-medicines="{{ medicines | tojson | forceescape }}" style="display:none;"></div>
 
-<!-- Secured Frontend Search Logic - Strictly Anti-XSS and Safe-DOM -->
 <script>
     const medicines = JSON.parse(document.getElementById("medicines-data").getAttribute("data-medicines"));
 
-    function searchMed() {
-        const query = document.getElementById("searchBox").value.toLowerCase();
-        const resultsDiv = document.getElementById("searchResults");
+    function filterCatalog() {
+        const query = document.getElementById("catalogSearch").value.toLowerCase().trim();
+        const cards = document.querySelectorAll(".catalog-card");
         
-        // Safe clear content using textContent to prevent DOM breakouts
-        resultsDiv.textContent = '';
-        
-        if (query.length < 1) { 
-            resultsDiv.style.display = "none"; 
-            return; 
-        }
-        
-        const filtered = medicines.filter(m => m.name.toLowerCase().includes(query));
-        if (filtered.length === 0) { 
-            resultsDiv.style.display = "none"; 
-            return; 
-        }
-        
-        // Strict Safe-DOM element construction (Strict Anti-XSS compliance)
-        filtered.forEach(m => {
-            const row = document.createElement("div");
-            row.className = "search-result-row";
-            row.addEventListener("click", () => selectMed(m.id));
-            
-            // Image Box
-            const imgBox = document.createElement("div");
-            if (m.image) {
-                const img = document.createElement("img");
-                img.src = "/" + m.image;
-                img.style.width = "32px";
-                img.style.height = "32px";
-                img.style.borderRadius = "6px";
-                img.style.objectFit = "contain";
-                img.style.background = "#fff";
-                img.style.border = "1px solid var(--border)";
-                imgBox.appendChild(img);
+        cards.forEach(card => {
+            const name = card.getAttribute("data-name") || "";
+            const batch = card.getAttribute("data-batch") || "";
+            if (name.includes(query) || batch.includes(query)) {
+                card.style.display = "";
             } else {
-                const dummy = document.createElement("div");
-                dummy.style.width = "32px";
-                dummy.style.height = "32px";
-                dummy.style.borderRadius = "6px";
-                dummy.style.background = "rgba(255,255,255,0.05)";
-                dummy.style.display = "flex";
-                dummy.style.alignItems = "center";
-                dummy.style.justifyContent = "center";
-                dummy.style.fontSize = "0.8rem";
-                dummy.style.color = "var(--text-muted)";
-                dummy.textContent = "💊";
-                imgBox.appendChild(dummy);
+                card.style.display = "none";
             }
-            row.appendChild(imgBox);
-            
-            // Text Details Block
-            const details = document.createElement("div");
-            
-            const medTitle = document.createElement("strong");
-            medTitle.style.color = "#ffffff";
-            medTitle.style.marginRight = "8px";
-            medTitle.textContent = m.name;
-            details.appendChild(medTitle);
-            
-            const medMeta = document.createElement("span");
-            medMeta.style.fontSize = "0.8rem";
-            medMeta.style.color = "var(--text-secondary)";
-            medMeta.textContent = `— Rs.${m.price} (Stock: ${m.quantity})`;
-            details.appendChild(medMeta);
-            
-            row.appendChild(details);
-            resultsDiv.appendChild(row);
         });
-        
-        resultsDiv.style.display = "block";
     }
 
-    function selectMed(id) {
-        const med = medicines.find(m => m.id === id);
+    function calculateSummary() {
+        const cartTotal = parseFloat('{{ cart_total or 0 }}');
+        const discountRate = parseFloat(document.getElementById("discountSelect").value || 0);
         
-        document.getElementById("searchBox").value = med.name;
-        document.getElementById("searchResults").style.display = "none";
-        document.getElementById("selectedMedId").value = med.id;
+        const discountAmount = cartTotal * (discountRate / 100);
+        const subtotalAfterDiscount = cartTotal - discountAmount;
         
-        // Strict Safe-DOM content replacement using textContent
-        document.getElementById("medName").textContent = med.name;
-        document.getElementById("medPrice").textContent = med.price;
-        document.getElementById("medStock").textContent = med.quantity;
-        document.getElementById("medUsage").textContent = med.usage;
-        document.getElementById("medRestrictions").textContent = med.restrictions;
+        // 12% total GST (CGST 6% + SGST 6%) calculated on post-discount amount
+        const gstAmount = subtotalAfterDiscount * 0.12; 
+        const grandTotal = subtotalAfterDiscount + gstAmount;
         
-        const infoImg = document.getElementById("medInfoImg");
-        if (med.image) {
-            infoImg.src = "/" + med.image;
-            infoImg.style.display = "block";
-        } else {
-            infoImg.style.display = "none";
+        document.getElementById("calcDiscount").textContent = discountAmount.toFixed(2);
+        document.getElementById("calcGST").textContent = gstAmount.toFixed(2);
+        document.getElementById("calcGrandTotal").textContent = grandTotal.toFixed(2);
+    }
+    
+    // Run on load
+    window.addEventListener("DOMContentLoaded", () => {
+        if (document.getElementById("discountSelect")) {
+            calculateSummary();
         }
+    });
 
-        document.getElementById("medInfo").style.display = "block";
+    function instantAdd(medId) {
+        document.getElementById("selectedMedId").value = medId;
+        document.getElementById("qtyInput").value = 1;
         document.getElementById("qtyInput").style.display = "block";
-        document.getElementById("addBtn").style.display = "block";
+        document.getElementById("cartForm").submit();
+    }
+
+    function autofillTestData() {
+        const names = ["John Doe", "Sarah Jenkins", "Robert Miller", "Emma Watson", "David Beckham"];
+        const phones = ["9876543210", "9988776655", "9123456789", "8877665544", "7766554433"];
+        const doctors = ["Dr. Aris Smith", "Dr. Jane Foster", "Dr. Gregory House", "Dr. Stephen Strange", "Dr. Meredith Grey"];
+        const prescriptions = ["RX-9921", "RX-1048", "RX-7726", "RX-3094", "RX-5541"];
+        const genders = ["Male", "Female", "Other"];
         
-        // Set max quantity safety limit
-        document.getElementById("qtyInput").max = med.quantity;
+        const randIdx = Math.floor(Math.random() * names.length);
+        
+        document.querySelector("input[name='patient_name']").value = names[randIdx];
+        document.querySelector("input[name='patient_phone']").value = phones[randIdx];
+        document.querySelector("input[name='patient_age']").value = Math.floor(Math.random() * 50) + 18;
+        document.querySelector("select[name='patient_gender']").value = genders[Math.floor(Math.random() * genders.length)];
+        document.querySelector("input[name='doctor_name']").value = doctors[randIdx];
+        document.querySelector("input[name='prescription_id']").value = prescriptions[randIdx];
     }
 </script>
 {% endblock %}
