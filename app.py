@@ -9,7 +9,12 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
 # Generate a cryptographically secure secret key if not set in environment
-app.secret_key = os.environ.get("SECRET_KEY", "meditrack123_secure_secret_789456")
+app.secret_key = os.environ.get("SECRET_KEY")
+
+if not app.secret_key:
+    raise RuntimeError(
+        "SECRET_KEY environment variable is not configured."
+    )
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB upload limit
 
 import uuid
